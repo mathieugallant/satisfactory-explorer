@@ -79,11 +79,13 @@ const confirmDelete = () => {
             <Button label="Update" @click="updateFactoryName()"/>
         </div>
     </Dialog>
-    <div class="flex justify-content-end gap-2 bg-ficsit-secondary p-2">
-        <Button v-if="factory" icon="pi pi-trash" severity="danger"  @click="confirmDelete()" />
-        <Button v-if="factory" icon="pi pi-pencil" severity="success" @click="editFactoryName()" />
-        <Button icon="pi pi-plus" @click="createFactory" />
-        <Dropdown v-model="factory" :options="factories" filter optionLabel="id" placeholder="Select a factory" class="w-full md:w-14rem " />        
+    <div class="flex justify-content-end bg-ficsit-secondary p-2">        
+        <div class="p-inputgroup w-full md:w-8 lg:w-6 xl:w-4">
+            <Button v-if="factory" icon="pi pi-trash" severity="danger"  @click="confirmDelete()" />
+            <Button v-if="factory" icon="pi pi-pencil" severity="success" @click="editFactoryName()" />
+            <Dropdown v-model="factory" :options="factories" filter optionLabel="id" placeholder="Select a factory" />        
+            <Button icon="pi pi-plus" @click="createFactory" />
+        </div>
     </div>
     <div v-if="factory" class="p-2">
         <TabContent :mainData="props.mainData" :modelValue="factory" @update:modelValue="(data) => saveChanges(factory, data)"/>
