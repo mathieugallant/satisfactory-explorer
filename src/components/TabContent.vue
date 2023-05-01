@@ -7,6 +7,9 @@ import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import Slider from 'primevue/slider';
 import Dialog from 'primevue/dialog';
+import { useConfirm } from "primevue/useconfirm";
+
+const confirm = useConfirm();
 
 import SupplyDisplay from './SupplyDisplay.vue';
 
@@ -22,8 +25,8 @@ const showSelectRecipe = ref(false);
 const possibleRecipes = ref([]);
 
 onMounted(() => {
-    recipes.value = props.modelValue || {};
-})
+    recipes.value = props.modelValue.factoryData || {};
+});
 
 const manualBuildClasses = [
     "BP_BuildGun_C",
@@ -209,9 +212,24 @@ const adjustInputOverclock = (dClass, data) => {
     data.overclock += supply / quantity;
 }
 
+const confirmRemoveRecipe = (dClass, rName) => {
+    confirm.require({
+        message: `Remove "${rName}" from the setup?`,
+        icon: 'pi pi-exclamation-triangle',
+        acceptClass: 'p-button-danger',
+        accept: () => {
+            removeRecipe(dClass);
+        }
+    });
+};
+
 watch(recipes, () => {
     emits('update:modelValue', recipes.value);
 }, { deep: true });
+
+watch(() => props.modelValue, () => {
+    recipes.value = props.modelValue.factoryData || {};
+});
 </script>
 
 <template>
@@ -223,7 +241,7 @@ watch(recipes, () => {
             <Button v-for="recipe of possibleRecipes" :label="recipe.name" @click="addRecipe(recipe)"/>
         </div>
     </Dialog>
-    <div class="w-full grid mb-2 p-1">
+    <div class="w-full grid mb-2 p-1 pt-2">
         <div class="col-12 md:col-6 md:border-right-1 border-300">
             <h4 class="m-0 mb-1">Requied Inputs <span class="text-red-600">▼</span></h4>
             <div class="flex flex-wrap gap-1">
@@ -276,7 +294,7 @@ watch(recipes, () => {
                                     {{ slotProps.data.products.map(x => x.class).join(', ') }}
                                 </div>
                             </div>
-                            <div class="bg-red-600 p-2 w-2rem h-2rem flex justify-content-center align-items-center" @click="removeRecipe(slotProps.data.class)">
+                            <div class="bg-red-600 p-2 w-2rem h-2rem flex justify-content-center align-items-center" @click="confirmRemoveRecipe(slotProps.data.class,  slotProps.data.name)">
                                 <i class="pi pi-times text-white" />
                             </div>
                         </div>
@@ -372,7 +390,7 @@ watch(recipes, () => {
                             <div class="w-full">
                                 <div class="p-inputgroup flex-1">
                                     <span class="p-inputgroup-addon">
-                                        OC
+                                        <i class="pi pi-clock" />
                                     </span>
                                     <InputText v-model.number="slotProps.data.overclock" class="w-full" />
                                     <Button icon="pi pi-refresh" @click="() => slotProps.data.overclock = 1"/>

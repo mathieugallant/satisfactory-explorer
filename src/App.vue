@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue';
 import UploadForm from './components/UploadForm.vue';
 import TabContainer  from './components/TabContainer.vue';
+import ConfirmDialog from 'primevue/confirmdialog';
 
 const mainData = {};
 const showUploadForm = ref(false);
@@ -39,7 +40,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="absolute top-0 h-3rem w-full surface-900 flex align-items-center justify-content-between">
+  <div class="absolute top-0 h-2rem w-full surface-900 flex align-items-center justify-content-between">
     <div class="flex align-items-center">
       <img src="./assets/satisfactory_logo.png" class="h-2rem m-2" />
       <span class="mr-2 text-white">explorer</span>
@@ -48,15 +49,16 @@ onMounted(() => {
       <i class="pi pi-github m-4 text-white" />
     </a>
   </div>
-  <div class="p-2">
+  <div>
     <TabContainer :mainData="mainData" />
   </div>
+  <ConfirmDialog></ConfirmDialog>
   <UploadForm v-if="showUploadForm" @processing-completed="closeUpload" />
 </template>
 
 <style>
 body {
-  margin: 3rem 0 0;
+  margin: 2rem 0 0;
   padding: 0;
   font-family: var(--font-family);
 }
