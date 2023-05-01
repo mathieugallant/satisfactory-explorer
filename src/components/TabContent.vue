@@ -224,7 +224,7 @@ watch(recipes, () => {
         </div>
     </Dialog>
     <div class="w-full grid mb-2 p-1">
-        <div class="col-6 border-right-1 border-300 mt-2">
+        <div class="col-12 md:col-6 md:border-right-1 border-300 mt-2">
             <h4 class="m-0 mb-1">Requied Inputs <span class="text-red-600">▼</span></h4>
             <div class="flex flex-wrap gap-1">
                 <div v-for="p of getAllNetDefecits()" class="flex flex-row align-items-center-center cursor-pointer" @click="checkAddRecipe(p)">
@@ -237,7 +237,7 @@ watch(recipes, () => {
                 </div>
             </div>
         </div>
-        <div class="col-6">            
+        <div class="col-12 md:col-6">            
             <h4 class="m-0 mb-1">Net Production <span class="text-green-600">▲</span></h4>
             <div class="flex flex-wrap gap-1 justify-content-start">
                 <div v-for="p of getAllNetProduction()" class="flex flex-row align-items-center-center cursor-pointer" @click="checkAddRecipe(p)">
@@ -251,10 +251,10 @@ watch(recipes, () => {
             </div>
         </div>        
     </div>
-    <div class="border-x-1 border-bottom-1 border-300">
+    <div class="border-x-1 border-bottom-1 border-100">
         <DataView :value="Object.values(recipes)" :layout="layout">
             <template #header>
-                <div class="flex justify-content-between">
+                <div class="flex flex-column md:flex-row md:justify-content-between">
                     <h3 class="m-1">Production Setup</h3>
                     <div class="p-inputgroup w-20rem">
                         <Dropdown v-model="selectedRecipe" :options="props.mainData.recipes" filter optionLabel="name" placeholder="Select a Recipe" class="w-full md:w-14rem">
@@ -329,7 +329,7 @@ watch(recipes, () => {
                             </div>
                         </div>
                         <div v-else class="col-12 grid">
-                            <div class="col-6 flex flex-column align-items-end border-right-1 border-300">
+                            <div class="col-12 md:col-6 flex flex-column md:align-items-end md:border-right-1 border-300">
                                 <div>Inputs</div>
                                 <div v-for="p of slotProps.data.ingredients" class="flex flex-row align-items-center-center mt-1">
                                     <div class="px-1 bg-ficsit-secondary text-white border-1 border-400 text-sm cursor-pointer" @click="checkAddRecipe(p.class)">
@@ -348,7 +348,7 @@ watch(recipes, () => {
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-6">
+                            <div class="col-12 md:col-6">
                                 <div>Outputs</div>
                                 <div v-for="p of slotProps.data.products" class="flex flex-row align-items-center-center mt-1">
                                     <div class="px-1 bg-ficsit-primary text-white border-1 border-400 text-sm">
@@ -375,11 +375,16 @@ watch(recipes, () => {
                                         OC
                                     </span>
                                     <InputText v-model.number="slotProps.data.overclock" class="w-full" />
+                                    <Button icon="pi pi-refresh" @click="() => slotProps.data.overclock = 1"/>
                                 </div>
-                                <Slider v-model="slotProps.data.overclock" class="w-full" :max="2.5" :step="0.05" style="margin-top: -4px;"/>
+                                <Slider v-model="slotProps.data.overclock" class="w-full" :max="2.5" :step="0.05" />
                             </div>
-                            <div class="w-full mt-2">
-                                <InputNumber v-model="slotProps.data.numMachines" inputId="minmax-buttons" mode="decimal" showButtons :min="1" :suffix="'x ' + getAutobuildNames(slotProps.data?.produced, slotProps.data.numMachines)"/>
+                            <div class="w-full mt-4">
+                                <div class="p-inputgroup flex-1">
+                                    <Button icon="pi pi-minus"  @click="() => slotProps.data.numMachines>0?slotProps.data.numMachines--:null"/>
+                                    <InputNumber v-model="slotProps.data.numMachines" inputId="minmax-buttons" mode="decimal" :min="1" :suffix="'x ' + getAutobuildNames(slotProps.data?.produced, slotProps.data.numMachines)"/>
+                                    <Button icon="pi pi-plus" @click="() => slotProps.data.numMachines++"/>
+                                </div>
                             </div>
                         </div>
                     </div>
