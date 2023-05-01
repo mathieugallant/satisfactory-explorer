@@ -39,9 +39,14 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="absolute top-0 h-3rem w-full surface-900 flex align-items-center">
-    <img src="./assets/satisfactory_logo.png" class="h-2rem m-2" />
-    <span class="mr-2 text-white">explorer</span>
+  <div class="absolute top-0 h-3rem w-full surface-900 flex align-items-center justify-content-between">
+    <div class="flex align-items-center">
+      <img src="./assets/satisfactory_logo.png" class="h-2rem m-2" />
+      <span class="mr-2 text-white">explorer</span>
+    </div>
+    <a href="https://github.com/mathieugallant/satisfactory-explorer" target="_blank">
+      <i class="pi pi-github m-4 text-white" />
+    </a>
   </div>
   <div class="p-2">
     <TabContainer :mainData="mainData" />

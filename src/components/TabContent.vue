@@ -224,7 +224,7 @@ watch(recipes, () => {
         </div>
     </Dialog>
     <div class="w-full grid mb-2 p-1">
-        <div class="col-12 md:col-6 md:border-right-1 border-300 mt-2">
+        <div class="col-12 md:col-6 md:border-right-1 border-300">
             <h4 class="m-0 mb-1">Requied Inputs <span class="text-red-600">▼</span></h4>
             <div class="flex flex-wrap gap-1">
                 <div v-for="p of getAllNetDefecits()" class="flex flex-row align-items-center-center cursor-pointer" @click="checkAddRecipe(p)">
