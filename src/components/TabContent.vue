@@ -69,7 +69,8 @@ const addRecipe = (recipe = null) => {
         recipes.value[(selectedRecipe.value || recipe).class] = {
             ...(selectedRecipe.value || recipe ), 
             overclock: 1,
-            numMachines: 1
+            numMachines: 1,
+            index: Object.keys(recipes.value).length
         };
         selectedRecipe.value = null;
     }
@@ -101,6 +102,7 @@ const computePpm = (quantity, dClass, data) => {
 
 const removeRecipe = (dClass) => {
     delete recipes.value[dClass];
+    adjustIndexes();
 }
 
 const getName = (dClass) => {
@@ -223,6 +225,10 @@ const confirmRemoveRecipe = (dClass, rName) => {
     });
 };
 
+const adjustIndexes = () => {
+    Object.values(recipes.value).sort((a,b) => a.index-b.index).forEach((x,i) => x.index = i);
+}
+
 watch(recipes, () => {
     emits('update:modelValue', recipes.value);
 }, { deep: true });
@@ -230,6 +236,30 @@ watch(recipes, () => {
 watch(() => props.modelValue, () => {
     recipes.value = props.modelValue.factoryData || {};
 });
+
+const dragging = ref(null);
+const dragHover = ref(null);
+
+const startDrag = (index) => {
+    dragging.value = index;
+}
+
+const moveToPosition = (e, index) => {
+    e.preventDefault();
+
+    if(dragging.value !== index) {
+        const target = Object.values(recipes.value).find(x=>x.index===dragging.value) || Object.values(recipes.value)[dragging.value];
+        target.index = index - 0.5;
+        adjustIndexes();
+    }
+    dragging.value = null;
+}
+
+const showDragHoverEffect = (e, index) => {
+    e.preventDefault();
+    dragHover.value = index;
+}
+
 </script>
 
 <template>
@@ -270,7 +300,7 @@ watch(() => props.modelValue, () => {
         </div>        
     </div>
     <div class="border-x-1 border-bottom-1 border-100">
-        <DataView :value="Object.values(recipes)" :layout="layout">
+        <DataView :value="Object.values(recipes).sort((a,b) => a?.index - b?.index)" :layout="layout">
             <template #header>
                 <div class="flex flex-column md:flex-row md:justify-content-between">
                     <h3 class="m-1">Production Setup</h3>
@@ -283,15 +313,24 @@ watch(() => props.modelValue, () => {
             </template>
     
             <template #grid="slotProps">
-                <div class="col-12 lg:col-6 xl:col-4 mt-2 py-2 pl-3 p-fluid">
+                <div 
+                    draggable="true" 
+                    :class="'col-12 lg:col-6 xl:col-4 mt-2 py-2 pl-3 p-fluid bg-white recipe-card ' + (dragHover === slotProps.index && dragging !== slotProps.index ? 'hover-effect':'')" 
+                    @drop="e => moveToPosition(e, slotProps.index)" 
+                    @dragstart="startDrag(slotProps.index)"
+                    @dragover="e=>showDragHoverEffect(e, slotProps.index)"
+                    @dragend="()=> {dragHover = null}"
+                >
                     <div class="col-12 p-2 shadow-2 grid">
                         <div class="col-12 flex justify-content-between">
-                            <div class="flex flex-column">
-                                <h3 class="m-0">
-                                    {{ slotProps.data.name }}
-                                </h3>
-                                <div class="text-500 text-xs ">
-                                    {{ slotProps.data.products.map(x => x.class).join(', ') }}
+                            <div class="flex flex-row align-items-center">
+                                <div class="flex flex-column">
+                                    <h3 class="m-0">
+                                        {{ slotProps.data.name }}
+                                    </h3>
+                                    <div class="text-500 text-xs ">
+                                        {{ slotProps.data.products.map(x => x.class).join(', ') }}
+                                    </div>
                                 </div>
                             </div>
                             <div class="bg-red-600 p-2 w-2rem h-2rem flex justify-content-center align-items-center" @click="confirmRemoveRecipe(slotProps.data.class,  slotProps.data.name)">
@@ -411,3 +450,12 @@ watch(() => props.modelValue, () => {
         </DataView>
     </div>
 </template>
+
+<style scoped>
+.recipe-card {
+    transition: all 0.2s ease-in-out;
+}
+.hover-effect {
+    transform: translateX(15px);
+}
+</style>
