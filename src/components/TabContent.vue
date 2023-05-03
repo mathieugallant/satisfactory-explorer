@@ -20,12 +20,38 @@ const emits = defineEmits(['update:modelValue']);
 
 const selectedRecipe = ref();
 const recipes = ref({});
+const targetPpm = ref({});
 const layout = ref('grid');
 const showSelectRecipe = ref(false);
 const possibleRecipes = ref([]);
+const holdAdjustMachines = {
+    class: null,
+    count: 0,
+    rate: 0,
+    multiplier: 0
+};
 
 onMounted(() => {
     recipes.value = props.modelValue.factoryData || {};
+    window.addEventListener('mouseup', () => {
+        holdAdjustMachines.class = null;
+        holdAdjustMachines.count = 0;
+        holdAdjustMachines.rate = 0;
+        holdAdjustMachines.multiplier = 0;
+    })
+    setInterval(() => {
+        if (holdAdjustMachines.class) {
+            holdAdjustMachines.count++;
+
+            if (holdAdjustMachines.count > 5) {
+                holdAdjustMachines.rate = 1;
+            }
+            recipes.value[holdAdjustMachines.class].numMachines += holdAdjustMachines.rate * holdAdjustMachines.multiplier;
+            if (recipes.value[holdAdjustMachines.class].numMachines <= 1) {
+                recipes.value[holdAdjustMachines.class].numMachines = 1;
+            }
+        }
+    }, 80)
 });
 
 const manualBuildClasses = [
@@ -66,8 +92,9 @@ const checkAddRecipe = (pClass) => {
 
 const addRecipe = (recipe = null) => {
     if((selectedRecipe.value || recipe)  && !recipes.value[(selectedRecipe.value || recipe).class]) {
-        recipes.value[(selectedRecipe.value || recipe).class] = {
-            ...(selectedRecipe.value || recipe ), 
+        const rClass = (selectedRecipe.value || recipe).class;
+        recipes.value[rClass] = {
+            class: rClass,
             overclock: 1,
             numMachines: 1,
             index: Object.keys(recipes.value).length
@@ -78,13 +105,14 @@ const addRecipe = (recipe = null) => {
 }
 
 const computePpm = (quantity, dClass, data) => {
-    if(isManual(data)) {
-        return quantity / data?.products?.[0]?.quantity;
+    const prodData = getData(data.class);
+    if(isManual(prodData)) {
+        return quantity / prodData?.products?.[0]?.quantity;
     }
 
     const factor = extractorFactors[dClass] || 1;
     let correction = 1;
-    if (isExtractor(data) && ['Desc_LiquidOil_C'].includes(dClass)) {
+    if (isExtractor(prodData) && ['Desc_LiquidOil_C'].includes(dClass)) {
         correction = 2;
     }
     return Math.round(
@@ -92,7 +120,7 @@ const computePpm = (quantity, dClass, data) => {
             quantity / 
             (props.mainData.descs[dClass].form === "RF_LIQUID" && !isExtractor(data)  ? 1000 : 1)
         ) * 
-        (60 / data.duration) * 
+        (60 / prodData.duration) * 
         data.overclock * 
         data.numMachines * 
         factor * correction *
@@ -126,14 +154,14 @@ const getAutobuildNames = (produced, num = 1) => {
 }
 
 const getUom = (dClass, data) => {
-    if (isManual(data)) {
+    if (isManual(getData(data?.class))) {
         return '';
     }
-    return props.mainData.descs[dClass].form === "RF_LIQUID" ? 'm³/M' : '/M'
+    return props.mainData.descs[dClass].form === "RF_LIQUID" ? 'm³/min' : '/min'
 }
 
 const isExtractor = (data) => {
-    return data.produced.includes('Build_Converter_C')
+    return getData(data.class).produced.includes('Build_Converter_C')
 }
 
 const isManual = (data) => {
@@ -150,7 +178,8 @@ const getMkSpread = (dClass) => {
 
 const computeSupply = (dClass) => {
     let supply = 0;
-    Object.values(recipes.value).forEach(r => {
+    Object.values(recipes.value).forEach(t => {
+        const r = {...t,...getData(t.class)};
         r.ingredients.forEach(i => {
             if(i.class === dClass) {
                 supply -= computePpm(i.quantity, i.class, r);
@@ -167,7 +196,8 @@ const computeSupply = (dClass) => {
 
 const getAllClasses = () => {
     const classes = {};
-    Object.values(recipes.value)?.forEach(r => {
+    Object.values(recipes.value)?.forEach(t => {
+        const r = getData(t.class);
         r.ingredients.forEach(i => classes[i.class] = true);
         r.products.forEach(i => classes[i.class] = true);
     });
@@ -202,21 +232,24 @@ const roundNumber = (num) => {
 
 const adjustOverclock = (dClass, data) => {
     data.overclock = 1;
+    const prodData = getData(data.class);
     const supply = computeSupply(dClass);
-    const quantity = computePpm(data.products.find(x=>x.class === dClass).quantity, dClass, data);
+    const quantity = computePpm(prodData.products.find(x=>x.class === dClass).quantity, dClass, data);
     data.overclock -= supply / quantity;
 }
 
 const adjustInputOverclock = (dClass, data) => {
     data.overclock = 1;
+    const prodData = getData(data.class);
     const supply = computeSupply(dClass);
-    const quantity = computePpm(data.ingredients.find(x=>x.class === dClass).quantity, dClass, data);
+    const quantity = computePpm(prodData.ingredients.find(x=>x.class === dClass).quantity, dClass, data);
     data.overclock += supply / quantity;
 }
 
-const confirmRemoveRecipe = (dClass, rName) => {
+const confirmRemoveRecipe = (dClass) => {
+
     confirm.require({
-        message: `Remove "${rName}" from the setup?`,
+        message: `Remove "${getData(dClass).name}" from the setup?`,
         icon: 'pi pi-exclamation-triangle',
         acceptClass: 'p-button-danger',
         accept: () => {
@@ -234,7 +267,8 @@ watch(recipes, () => {
 }, { deep: true });
 
 watch(() => props.modelValue, () => {
-    recipes.value = props.modelValue.factoryData || {};
+    recipes.value = {};
+    Object.entries((e,k) => recipes.value[k] = e);
 });
 
 const dragging = ref(null);
@@ -260,6 +294,58 @@ const showDragHoverEffect = (e, index) => {
     dragHover.value = index;
 }
 
+const getData = (tClass) => {
+    if (tClass?.startsWith('Recipe')) {
+        return props.mainData.recipes.find(r=>r.class === tClass);
+    }
+    return props.mainData.descs.find?.(d=>d?.class === tClass);
+}
+
+const startHoldAdjust = (rClass, adjust) => {
+    if (recipes.value[rClass].numMachines + adjust) {
+        recipes.value[rClass].numMachines += adjust;
+    }
+    holdAdjustMachines.class = rClass;
+    holdAdjustMachines.multiplier = adjust;
+}
+
+const startSetPpm = (rClass, dClass) => {
+    const data = getData(rClass);
+    if (getAutobuildNames(data?.produced)) {
+        targetPpm.value.visible = true;
+        targetPpm.value.rClass = rClass;
+        targetPpm.value.dClass = dClass;
+        const quantity = data.products.find(x=>x.class === dClass)?.quantity || data.ingredients.find(x=>x.class === dClass).quantity;
+        targetPpm.value.ppm = computePpm(quantity, dClass, recipes.value[rClass]);
+    }
+}
+
+const setPpm = () => {
+    const prodData = getData(targetPpm.value.rClass);
+    const dClass = targetPpm.value.dClass;
+    const quantity = prodData.products.find(x=>x.class === dClass)?.quantity || prodData.ingredients.find(x=>x.class === dClass).quantity;
+    const factor = extractorFactors[dClass] || 1;
+
+    targetPpm.value.visible = false;
+
+    let correction = 1;
+    if (isExtractor(prodData) && ['Desc_LiquidOil_C'].includes(dClass)) {
+        correction = 2;
+    }
+
+    const baseRate = (quantity / 
+        (props.mainData.descs[dClass].form === "RF_LIQUID" && !isExtractor(prodData)  ? 1000 : 1)
+    ) * (60 / prodData.duration);
+
+    let targetNumMachines = targetPpm.value.ppm / factor * correction / baseRate;
+
+    if (targetNumMachines > Math.round(targetNumMachines)) {
+        targetNumMachines++;
+    }
+    targetNumMachines = Math.round(targetNumMachines);
+    recipes.value[targetPpm.value.rClass].numMachines = targetNumMachines;
+    recipes.value[targetPpm.value.rClass].overclock = targetPpm.value.ppm / (baseRate * targetNumMachines);
+}
 </script>
 
 <template>
@@ -269,6 +355,12 @@ const showDragHoverEffect = (e, index) => {
         </div>
         <div class="flex flex-wrap gap-2">
             <Button v-for="recipe of possibleRecipes" :label="recipe.name" @click="addRecipe(recipe)"/>
+        </div>
+    </Dialog>
+    <Dialog v-model:visible="targetPpm.visible" modal header="Set Desired Rate Value">
+        <div class="flex flex-row">
+            <InputNumber v-model="targetPpm.ppm" class="w-full" :min="1" :minFractionDigits="0" :maxFractionDigits="8" :suffix="getUom(targetPpm.dClass, recipes[targetPpm.rClass])"/>
+            <Button label="Set!" :disabled=" !Number(targetPpm.ppm)" @click="setPpm()"/>
         </div>
     </Dialog>
     <div class="w-full grid mb-2 p-1 pt-2">
@@ -326,21 +418,21 @@ const showDragHoverEffect = (e, index) => {
                             <div class="flex flex-row align-items-center">
                                 <div class="flex flex-column">
                                     <h3 class="m-0">
-                                        {{ slotProps.data.name }}
+                                        {{ getData(slotProps.data.class).name }}
                                     </h3>
                                     <div class="text-500 text-xs ">
-                                        {{ slotProps.data.products.map(x => x.class).join(', ') }}
+                                        {{ getData(slotProps.data.class).products.map(x => x.class).join(', ') }}
                                     </div>
                                 </div>
                             </div>
-                            <div class="bg-red-600 p-2 w-2rem h-2rem flex justify-content-center align-items-center" @click="confirmRemoveRecipe(slotProps.data.class,  slotProps.data.name)">
+                            <div class="bg-red-600 p-2 w-2rem h-2rem flex justify-content-center align-items-center" @click="confirmRemoveRecipe(slotProps.data.class)">
                                 <i class="pi pi-times text-white" />
                             </div>
                         </div>
                         <div v-if="isExtractor(slotProps.data)" class="col-12 grid">
-                            <div v-for="p of slotProps.data.products" class="col-12">
+                            <div v-for="p of getData(slotProps.data.class).products" class="col-12">
                                 <div v-for="mk of getMkSpread(p.class)" class="w-full flex flex-row mt-1">
-                                    <div class="px-1 bg-ficsit-primary text-white text-sm">
+                                    <div class="px-1 bg-ficsit-primary border-1 border-400 text-white text-sm">
                                         {{ getName(p.class) }} (Mk. {{mk.l}})
                                     </div>
                                     <div class="px-1 border-1 text-sm">
@@ -388,14 +480,14 @@ const showDragHoverEffect = (e, index) => {
                         <div v-else class="col-12 grid">
                             <div class="col-12 md:col-6 flex flex-column md:align-items-end md:border-right-1 border-300">
                                 <div>Inputs</div>
-                                <div v-for="p of slotProps.data.ingredients" class="flex flex-row align-items-center-center mt-1">
+                                <div v-for="p of getData(slotProps.data.class).ingredients" class="flex flex-row align-items-center-center mt-1">
                                     <div class="px-1 bg-ficsit-secondary text-white border-1 border-400 text-sm cursor-pointer" @click="checkAddRecipe(p.class)">
                                         {{ getName(p.class) }}
                                     </div>
                                     <div class="border-y-1 border-400 text-sm cursor-pointer" @click="adjustInputOverclock(p.class, slotProps.data)">
-                                        <SupplyDisplay :supply="roundNumber(computeSupply(p.class, slotProps.data))" />
+                                        <SupplyDisplay :supply="roundNumber(computeSupply(p.class, getData(slotProps.data.class)))" />
                                     </div>
-                                    <div class="px-1 border-1 border-400 text-sm">
+                                    <div class="px-1 border-1 border-400 text-sm cursor-pointer" @click="startSetPpm(slotProps.data.class, p.class)">
                                         <span>
                                             {{ roundNumber(computePpm(p.quantity, p.class, slotProps.data)) }}
                                         </span>
@@ -407,14 +499,14 @@ const showDragHoverEffect = (e, index) => {
                             </div>
                             <div class="col-12 md:col-6">
                                 <div>Outputs</div>
-                                <div v-for="p of slotProps.data.products" class="flex flex-row align-items-center-center mt-1">
+                                <div v-for="p of getData(slotProps.data.class).products" class="flex flex-row align-items-center-center mt-1">
                                     <div class="px-1 bg-ficsit-primary text-white border-1 border-400 text-sm">
-                                        {{ props.mainData.descs[p.class].name || slotProps.data.name }}
+                                        {{ props.mainData.descs[p.class].name || getData(slotProps.data.class).name }}
                                     </div>
                                     <div class="border-y-1 border-400 text-sm cursor-pointer" @click="adjustOverclock(p.class, slotProps.data)">
-                                        <SupplyDisplay :supply="roundNumber(computeSupply(p.class, slotProps.data))" />
+                                        <SupplyDisplay :supply="roundNumber(computeSupply(p.class, getData(slotProps.data.class)))" />
                                     </div>
-                                    <div class="px-1 border-1 border-400 text-sm">
+                                    <div class="px-1 border-1 border-400 text-sm cursor-pointer"  @click="startSetPpm(slotProps.data.class, p.class)">
                                         <span>
                                             {{ roundNumber(computePpm(p.quantity, p.class, slotProps.data)) }}
                                         </span>
@@ -425,7 +517,7 @@ const showDragHoverEffect = (e, index) => {
                                 </div>
                             </div>
                         </div>
-                        <div v-if="getAutobuildNames(slotProps.data?.produced)" class="col-12">
+                        <div v-if="getAutobuildNames(getData(slotProps.data.class)?.produced)" class="col-12">
                             <div class="w-full">
                                 <div class="p-inputgroup flex-1">
                                     <span class="p-inputgroup-addon">
@@ -438,9 +530,9 @@ const showDragHoverEffect = (e, index) => {
                             </div>
                             <div class="w-full mt-4">
                                 <div class="p-inputgroup flex-1">
-                                    <Button icon="pi pi-minus"  @click="() => slotProps.data.numMachines>0?slotProps.data.numMachines--:null"/>
-                                    <InputNumber v-model="slotProps.data.numMachines" inputId="minmax-buttons" mode="decimal" :min="1" :suffix="'x ' + getAutobuildNames(slotProps.data?.produced, slotProps.data.numMachines)"/>
-                                    <Button icon="pi pi-plus" @click="() => slotProps.data.numMachines++"/>
+                                    <Button icon="pi pi-minus" @mousedown="() => startHoldAdjust(slotProps.data.class, -1)"/>
+                                    <InputNumber v-model="slotProps.data.numMachines" inputId="minmax-buttons" mode="decimal" :min="1" :suffix="'x ' + getAutobuildNames(getData(slotProps.data.class)?.produced, slotProps.data.numMachines)"/>
+                                    <Button icon="pi pi-plus" @mousedown="() => startHoldAdjust(slotProps.data.class, 1)"/>
                                 </div>
                             </div>
                         </div>
