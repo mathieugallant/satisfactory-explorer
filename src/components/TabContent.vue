@@ -268,7 +268,11 @@ watch(recipes, () => {
 
 watch(() => props.modelValue, () => {
     recipes.value = {};
-    Object.entries((e,k) => recipes.value[k] = e);
+    Object.keys(props.modelValue.factoryData || {}).forEach(k => {
+        if (props.modelValue.factoryData[k]) {
+            recipes.value[k] = props.modelValue.factoryData[k];
+        }
+    });
 });
 
 const dragging = ref(null);
@@ -359,8 +363,8 @@ const setPpm = () => {
     </Dialog>
     <Dialog v-model:visible="targetPpm.visible" modal header="Set Desired Rate Value">
         <div class="flex flex-row">
-            <InputNumber v-model="targetPpm.ppm" class="w-full" :min="1" :minFractionDigits="0" :maxFractionDigits="8" :suffix="getUom(targetPpm.dClass, recipes[targetPpm.rClass])"/>
-            <Button label="Set!" :disabled=" !Number(targetPpm.ppm)" @click="setPpm()"/>
+            <InputNumber v-model="targetPpm.ppm" class="w-full" :min="1" :minFractionDigits="0" :maxFractionDigits="8" :suffix="getUom(targetPpm.dClass, recipes[targetPpm.rClass])" />
+            <Button label="Set!" :disabled="!Number(targetPpm.ppm)" @click="setPpm()"/>
         </div>
     </Dialog>
     <div class="w-full grid mb-2 p-1 pt-2">
