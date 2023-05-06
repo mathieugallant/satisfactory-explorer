@@ -363,7 +363,7 @@ const setPpm = () => {
     </Dialog>
     <Dialog v-model:visible="targetPpm.visible" modal header="Set Desired Rate Value">
         <div class="flex flex-row">
-            <InputNumber v-model="targetPpm.ppm" class="w-full" :min="1" :minFractionDigits="0" :maxFractionDigits="8" :suffix="getUom(targetPpm.dClass, recipes[targetPpm.rClass])" />
+            <InputNumber v-model="targetPpm.ppm" :useGrouping="false" class="w-full" :min="1" :minFractionDigits="0" :maxFractionDigits="8" :suffix="getUom(targetPpm.dClass, recipes[targetPpm.rClass])" />
             <Button label="Set!" :disabled="!Number(targetPpm.ppm)" @click="setPpm()"/>
         </div>
     </Dialog>
