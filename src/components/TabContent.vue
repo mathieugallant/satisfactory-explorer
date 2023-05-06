@@ -354,7 +354,7 @@ const setPpm = () => {
 
 <template>
     <Dialog v-model:visible="showSelectRecipe" modal header="Multiple Choices Available!">
-        <div class="mb-4">
+        <div class="mb-2">
             Pick a recipe to add :
         </div>
         <div class="flex flex-wrap gap-2">

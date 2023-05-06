@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue';
 import UploadForm from './components/UploadForm.vue';
 import TabContainer  from './components/TabContainer.vue';
 import ConfirmDialog from 'primevue/confirmdialog';
+import Toast from 'primevue/toast';
 
 const mainData = {};
 const showUploadForm = ref(false);
@@ -52,7 +53,8 @@ onMounted(() => {
   <div>
     <TabContainer :mainData="mainData" />
   </div>
-  <ConfirmDialog></ConfirmDialog>
+  <ConfirmDialog />
+  <Toast />
   <UploadForm v-if="showUploadForm" @processing-completed="closeUpload" />
 </template>
 
