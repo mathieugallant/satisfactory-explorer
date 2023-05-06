@@ -154,7 +154,7 @@ const getSuggestions = ({query}) => {
                 <AutoComplete v-model="createNewFactory.name" :suggestions="nameSuggestions" @complete="getSuggestions" :completeOnFocus="true" />
                 <Button icon="pi pi-times" @click="() => createNewFactory.name = ''" />
             </div>
-            <Button label="Create" @click="doCreateFactory()"/>
+            <Button label="Create" @click="doCreateFactory()" :disabled="!createNewFactory.name.trim() || factories.find(f => f.id === createNewFactory.name.trim())"/>
         </div>
     </Dialog>
     <Dialog v-model:visible="showChangeFactoryName.visible" modal header="Edit Factory Name" class="w-11 md:w-8 lg:w-6">
@@ -166,7 +166,7 @@ const getSuggestions = ({query}) => {
                 <AutoComplete v-model="showChangeFactoryName.newFactoryName" :suggestions="nameSuggestions" @complete="getSuggestions" :completeOnFocus="true" />
                 <Button icon="pi pi-times" @click="() => showChangeFactoryName.newFactoryName = ''" />
             </div>
-            <Button label="Update" @click="updateFactoryName()" :disabled="showChangeFactoryName.newFactoryName.trim() && factories.find(f => f.id === showChangeFactoryName.newFactoryName.trim())"/>
+            <Button label="Update" @click="updateFactoryName()" :disabled="!showChangeFactoryName.newFactoryName.trim() || factories.find(f => f.id === showChangeFactoryName.newFactoryName.trim())"/>
         </div>
     </Dialog>
     <Dialog v-model:visible="showPasteFactory.visible" modal header="Import From Clipboard" class="w-11 md:w-8 lg:w-6">
