@@ -41,7 +41,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="absolute top-0 h-2rem w-full surface-900 flex align-items-center justify-content-between">
+  <div class="absolute top-0 h-2rem w-full bg-primary flex align-items-center justify-content-between">
     <div class="flex align-items-center">
       <img src="./assets/satisfactory_logo.png" class="h-2rem m-2" />
       <span class="mr-2 text-white">explorer</span>

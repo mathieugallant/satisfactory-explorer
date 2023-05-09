@@ -189,7 +189,7 @@ const getSuggestions = ({query}) => {
     <div class="flex justify-content-end bg-ficsit-secondary p-2">        
         <div class="p-inputgroup w-full md:w-8 lg:w-6 xl:w-4">
             <Button v-if="factory" icon="pi pi-copy" severity="info"  @click="factoryToClipboard()" />
-            <Button v-if="factory" icon="pi pi-cloud-download" severity="warning"  @click="pasteFactory()" />
+            <Button icon="pi pi-cloud-download" severity="warning"  @click="pasteFactory()" />
             <Button v-if="factory" icon="pi pi-trash" severity="danger"  @click="confirmDelete()" />
             <Button v-if="factory" icon="pi pi-pencil" severity="success" @click="editFactoryName()" />
             <Dropdown v-model="factory" :options="factories" filter optionLabel="id" placeholder="Select a factory" />        
