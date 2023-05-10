@@ -443,10 +443,10 @@ const setPpm = () => {
                                         {{ getData(slotProps.data.class).name }}
                                     </h3>
                                     <div v-if="computeConsumption(slotProps.data)" class="flex flex-row text-sm mt-1">
-                                        <div class="border-1 flex align-items-center border-round-left">
+                                        <div class="border-1 flex align-items-center border-round-left border-400 px-1 ">
                                             <i class="pi pi-bolt text-yellow-500" />
                                         </div>
-                                        <div class="border-y-1 border-right-1 p-1 border-round-right white-space-nowrap">
+                                        <div class="border-y-1 border-right-1 p-1 border-round-right white-space-nowrap border-400 px-1 py-0">
                                             {{ computeConsumption(slotProps.data) }} <span class="text-xxs">MW/h</span>
                                         </div>
                                     </div>
