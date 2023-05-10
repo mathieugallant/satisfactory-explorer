@@ -16,6 +16,8 @@ const getDescriptions = (rawData) => {
       "description": mDescription,
       "abbreviated": mAbbreviatedDisplayName,
       "discardable": mCanBeDiscarded,
+      "powerConsumption": mPowerConsumption,
+      "powerExponent": mPowerConsumptionExponent,
       "energy": mEnergyValue,
       "decay": mRadioactiveDecay,
       "form": mForm,
@@ -51,6 +53,7 @@ const getRecipes = (rawData) => {
 
 const loadData = (event) => {
     const rawData = JSON.parse(event.target.result);
+    processingData.value = true;
     const pProcess = [getDescriptions(rawData), getRecipes(rawData)];
     Promise.all(pProcess).then(result => {
       localStorage.setItem('descData', JSON.stringify(result[0]));
@@ -63,6 +66,7 @@ const loadData = (event) => {
 }
 
 const checkData = () => {
+    processingData.value = true;
     const reader = new FileReader();
     reader.onload = loadData;
     reader.readAsText(finput.value.files[0]);
@@ -70,6 +74,7 @@ const checkData = () => {
 
 
 const useDefault = () => {
+  processingData.value = true;
   import('../Docs.json').then(rawData => {
     loadData({target: {result: JSON.stringify(rawData.default)}});
   });
@@ -78,18 +83,19 @@ const useDefault = () => {
 
 <template>
     <div class="absolute top-0 w-screen h-screen flex justify-content-center align-items-center" style="background-color: #00000099;">
-        <div v-if="processingData" class="w-11 md:w-10 lg:w-8 bg-white border-round p-3 flex flex-column justify-content-center align-items-center">
+        <div v-if="processingData" class="w-11 md:w-10 lg:w-8 surface-100 border-round p-3 flex flex-column justify-content-center align-items-center">
             <h2 class="mb-4">Processing...</h2>
             <div class="mb-4 h-5rem w-5rem flex justify-content-center align-items-center">
                 <div class="bounce border-circle w-2rem h-2rem bg-yellow-500"></div>
             </div>
         </div>
-        <div v-else class="w-11 md:w-10 lg:w-8 bg-white border-round p-3 flex flex-column justify-content-center align-items-center">
+        <div v-else class="w-11 md:w-10 lg:w-8 surface-100 border-round p-3 flex flex-column justify-content-center align-items-center">
             <h2 class="mb-4">Upload Current Community Data</h2>
             <div class="mb-3">Upload your Docs.json file located in the `CommunityRessources/Docs` folder.</div>
             <input accept="application/json" ref="finput" class="mb-4" type="file" @change="checkData">
             <div class="w-full flex justify-content-center mb-4">OR</div>
             <Button label="Use Built-In Data" @click="useDefault()"/>
+            <div class="w-full flex justify-content-center mb-2 text-xs">(Dated March 24th 2023)</div>
         </div>
     </div>
 </template>

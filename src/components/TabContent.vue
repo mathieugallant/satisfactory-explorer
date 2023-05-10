@@ -128,6 +128,24 @@ const computePpm = (quantity, dClass, data) => {
     ) / 100;
 }
 
+const computeConsumption = (data) => {
+    const prodData = getData(data.class);
+    const defaultProducer = props.mainData.descs[prodData.produced.filter(x => !manualBuildClasses.includes(x))?.[0]];
+
+    
+    let consumption = Number(defaultProducer?.powerConsumption) || (Number(prodData?.consumptionFactor) + Number(prodData?.consumptionConstant));
+    
+    if(!consumption || !defaultProducer ) {
+        return '';
+    }
+    
+    const maxConsumption =  Math.round(consumption * Math.pow(data.overclock,defaultProducer.powerExponent) * data.numMachines);
+    const minConsumption = Math.round(prodData?.consumptionConstant * Math.pow(data.overclock,defaultProducer.powerExponent) * data.numMachines);
+    const avgConsumption = Math.round(prodData?.consumptionFactor * Math.pow(data.overclock,defaultProducer.powerExponent) * data.numMachines);
+
+    return (minConsumption ? minConsumption + '-': '') + maxConsumption + (minConsumption ? ' (avg. ' + avgConsumption + ')': '');
+}
+
 const removeRecipe = (dClass) => {
     delete recipes.value[dClass];
     adjustIndexes();
@@ -369,7 +387,7 @@ const setPpm = () => {
     </Dialog>
     <div class="w-full grid mb-2 p-1 pt-2">
         <div class="col-12 md:col-6 md:border-right-1 border-300">
-            <h4 class="m-0 mb-1">Requied Inputs <span class="text-red-600">▼</span></h4>
+            <h4 class="m-0 mb-1">Requied Inputs / min<span class="text-red-600">▼</span></h4>
             <div class="flex flex-wrap gap-1">
                 <div v-for="p of getAllNetDefecits()" class="flex flex-row align-items-center-center cursor-pointer" @click="checkAddRecipe(p)">
                     <div class="px-1 bg-ficsit-secondary text-white border-1 border-right-none border-round-left border-400 text-sm">
@@ -382,7 +400,7 @@ const setPpm = () => {
             </div>
         </div>
         <div class="col-12 md:col-6">            
-            <h4 class="m-0 mb-1">Net Production <span class="text-green-600">▲</span></h4>
+            <h4 class="m-0 mb-1">Net Production / min <span class="text-green-600">▲</span></h4>
             <div class="flex flex-wrap gap-1 justify-content-start">
                 <div v-for="p of getAllNetProduction()" class="flex flex-row align-items-center-center cursor-pointer" @click="checkAddRecipe(p)">
                     <div class="px-1 bg-ficsit-primary text-white border-1 border-right-none border-400 text-sm  border-round-left">
@@ -419,17 +437,24 @@ const setPpm = () => {
                 >
                     <div class="col-12 p-2 shadow-2 grid surface-50">
                         <div class="col-12 flex justify-content-between">
-                            <div class="flex flex-row align-items-center">
+                            <div class="flex flex-row align-items-center flex-grow-1">
                                 <div class="flex flex-column">
                                     <h3 class="m-0">
                                         {{ getData(slotProps.data.class).name }}
                                     </h3>
-                                    <div class="text-500 text-xs ">
-                                        {{ getData(slotProps.data.class).products.map(x => x.class).join(', ') }}
+                                    <div v-if="computeConsumption(slotProps.data)" class="flex flex-row text-sm mt-1">
+                                        <div class="border-1 flex align-items-center border-round-left">
+                                            <i class="pi pi-bolt text-yellow-500" />
+                                        </div>
+                                        <div class="border-y-1 border-right-1 p-1 border-round-right white-space-nowrap">
+                                            {{ computeConsumption(slotProps.data) }} <span class="text-xxs">MW/h</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <Button icon="pi pi-times" severity="danger" @click="confirmRemoveRecipe(slotProps.data.class)" size="small" />
+                            <div>
+                                <Button icon="pi pi-times" severity="danger" @click="confirmRemoveRecipe(slotProps.data.class)" size="small" class="w-2rem h-2rem" />
+                            </div>
                         </div>
                         <div v-if="isExtractor(slotProps.data)" class="col-12 grid">
                             <div v-for="p of getData(slotProps.data.class).products" class="col-12">
@@ -479,42 +504,44 @@ const setPpm = () => {
                                 </div>                    
                             </div>
                         </div>
-                        <div v-else class="col-12 grid">
-                            <div class="col-12 md:col-6 flex flex-column md:align-items-end md:border-right-1 border-300">
-                                <div>Inputs</div>
-                                <div v-for="p of getData(slotProps.data.class).ingredients" class="flex flex-row align-items-center-center mt-1">
-                                    <div class="px-1 bg-ficsit-secondary text-white border-1 border-400 text-sm cursor-pointer  border-round-left" @click="checkAddRecipe(p.class)">
-                                        {{ getName(p.class) }}
-                                    </div>
-                                    <div class="border-y-1 border-400 text-sm cursor-pointer" @click="adjustInputOverclock(p.class, slotProps.data)">
-                                        <SupplyDisplay :supply="roundNumber(computeSupply(p.class, getData(slotProps.data.class)))" />
-                                    </div>
-                                    <div class="px-1 border-1 border-400 text-sm cursor-pointer  border-round-right" @click="startSetPpm(slotProps.data.class, p.class)">
-                                        <span>
-                                            {{ roundNumber(computePpm(p.quantity, p.class, slotProps.data)) }}
-                                        </span>
-                                        <span class="text-xxs">
-                                            {{ getUom(p.class, slotProps.data) }}
-                                        </span>
+                        <div v-else class="col-12 material-list">
+                            <div class="mats">
+                                <div class="flex flex-column border-300 mats-in w-full">
+                                    <div>Inputs</div>
+                                    <div v-for="p of getData(slotProps.data.class).ingredients" class="flex flex-row align-items-center-center mt-1">
+                                        <div class="px-1 bg-ficsit-secondary text-white border-1 border-400 text-sm cursor-pointer border-round-left" @click="checkAddRecipe(p.class)">
+                                            {{ getName(p.class) }}
+                                        </div>
+                                        <div class="border-y-1 border-400 text-sm cursor-pointer" @click="adjustInputOverclock(p.class, slotProps.data)">
+                                            <SupplyDisplay :supply="roundNumber(computeSupply(p.class, getData(slotProps.data.class)))" />
+                                        </div>
+                                        <div class="px-1 border-1 border-400 text-sm cursor-pointer  border-round-right" @click="startSetPpm(slotProps.data.class, p.class)">
+                                            <span>
+                                                {{ roundNumber(computePpm(p.quantity, p.class, slotProps.data)) }}
+                                            </span>
+                                            <span class="text-xxs">
+                                                {{ getUom(p.class, slotProps.data) }}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="col-12 md:col-6">
-                                <div>Outputs</div>
-                                <div v-for="p of getData(slotProps.data.class).products" class="flex flex-row align-items-center-center mt-1">
-                                    <div class="px-1 bg-ficsit-primary text-white border-1 border-400 text-sm  border-round-left">
-                                        {{ props.mainData.descs[p.class].name || getData(slotProps.data.class).name }}
-                                    </div>
-                                    <div class="border-y-1 border-400 text-sm cursor-pointer" @click="adjustOverclock(p.class, slotProps.data)">
-                                        <SupplyDisplay :supply="roundNumber(computeSupply(p.class, getData(slotProps.data.class)))" />
-                                    </div>
-                                    <div class="px-1 border-1 border-400 text-sm cursor-pointer border-round-right"  @click="startSetPpm(slotProps.data.class, p.class)">
-                                        <span>
-                                            {{ roundNumber(computePpm(p.quantity, p.class, slotProps.data)) }}
-                                        </span>
-                                        <span class="text-xxs">
-                                            {{ getUom(p.class, slotProps.data) }}
-                                        </span>
+                                <div class="w-full">
+                                    <div>Outputs</div>
+                                    <div v-for="p of getData(slotProps.data.class).products" class="flex flex-row align-items-center-center mt-1">
+                                        <div class="px-1 bg-ficsit-primary text-white border-1 border-400 text-sm  border-round-left">
+                                            {{ props.mainData.descs[p.class].name || getData(slotProps.data.class).name }}
+                                        </div>
+                                        <div class="border-y-1 border-400 text-sm cursor-pointer" @click="adjustOverclock(p.class, slotProps.data)">
+                                            <SupplyDisplay :supply="roundNumber(computeSupply(p.class, getData(slotProps.data.class)))" />
+                                        </div>
+                                        <div class="px-1 border-1 border-400 text-sm cursor-pointer border-round-right"  @click="startSetPpm(slotProps.data.class, p.class)">
+                                            <span>
+                                                {{ roundNumber(computePpm(p.quantity, p.class, slotProps.data)) }}
+                                            </span>
+                                            <span class="text-xxs">
+                                                {{ getUom(p.class, slotProps.data) }}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -530,7 +557,7 @@ const setPpm = () => {
                                 </div>
                                 <Slider v-model="slotProps.data.overclock" class="w-full" :max="2.5" :step="0.05" style="margin-top: -4px;"/>
                             </div>
-                            <div class="w-full mt-4">
+                            <div class="w-full mt-3">
                                 <div class="p-inputgroup flex-1">
                                     <Button icon="pi pi-minus" @mousedown="() => startHoldAdjust(slotProps.data.class, -1)"/>
                                     <InputNumber v-model="slotProps.data.numMachines" inputId="minmax-buttons" mode="decimal" :min="1" :suffix="'x ' + getAutobuildNames(getData(slotProps.data.class)?.produced, slotProps.data.numMachines)"/>
@@ -551,5 +578,29 @@ const setPpm = () => {
 }
 .hover-effect {
     transform: translateX(15px);
+}
+.material-list {
+  container-type: inline-size;
+}
+
+.mats {
+    display: block;
+}
+
+.mats-in {
+    margin-bottom: 1rem;
+}
+
+@container (min-width: 500px) {
+    .mats {
+        display: flex;
+    }
+    .mats-in {
+        align-items: end;
+        border-right: 1px solid;
+        padding-right: 0.5rem;
+        margin-right: 0.5rem;
+        margin-bottom: 0rem;
+    }
 }
 </style>
