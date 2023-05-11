@@ -128,6 +128,24 @@ const computePpm = (quantity, dClass, data) => {
     ) / 100;
 }
 
+const computeAllConsumption = () => {
+    return Math.round(Object.values(recipes.value).reduce((p, data) => {
+        const prodData = getData(data.class);
+        const defaultProducer = props.mainData.descs[prodData.produced.filter(x => !manualBuildClasses.includes(x))?.[0]];
+    
+        
+        let consumption = Number(defaultProducer?.powerConsumption) || Number(prodData?.consumptionFactor);
+        
+        if(!consumption || !defaultProducer ) {
+            return p;
+        }
+        
+        const maxConsumption =  consumption * Math.pow(data.overclock,defaultProducer.powerExponent) * data.numMachines;
+    
+        return p + maxConsumption;
+    }, 0)*100)/100;
+}
+
 const computeConsumption = (data) => {
     const prodData = getData(data.class);
     const defaultProducer = props.mainData.descs[prodData.produced.filter(x => !manualBuildClasses.includes(x))?.[0]];
@@ -139,9 +157,9 @@ const computeConsumption = (data) => {
         return '';
     }
     
-    const maxConsumption =  Math.round(consumption * Math.pow(data.overclock,defaultProducer.powerExponent) * data.numMachines);
-    const minConsumption = Math.round(prodData?.consumptionConstant * Math.pow(data.overclock,defaultProducer.powerExponent) * data.numMachines);
-    const avgConsumption = Math.round(prodData?.consumptionFactor * Math.pow(data.overclock,defaultProducer.powerExponent) * data.numMachines);
+    const maxConsumption =  Math.round(consumption * Math.pow(data.overclock,defaultProducer.powerExponent) * data.numMachines *100)/100;
+    const minConsumption = Math.round(prodData?.consumptionConstant * Math.pow(data.overclock,defaultProducer.powerExponent) * data.numMachines*100)/100;
+    const avgConsumption = Math.round(prodData?.consumptionFactor * Math.pow(data.overclock,defaultProducer.powerExponent) * data.numMachines*100)/100;
 
     return (minConsumption ? minConsumption + '-': '') + maxConsumption + (minConsumption ? ' (avg. ' + avgConsumption + ')': '');
 }
@@ -417,7 +435,18 @@ const setPpm = () => {
         <DataView :value="Object.values(recipes).sort((a,b) => a?.index - b?.index)" :layout="layout">
             <template #header>
                 <div class="flex flex-column md:flex-row md:justify-content-between">
-                    <h3 class="m-1">Production Setup</h3>
+                    <div class="flex flex-row align-items-center gap-2">
+                        <h3 class="m-1">Production Setup</h3>
+                        <div class="flex flex-row text-sm mt-1">
+                            <div class="border-1 flex align-items-center border-round-left border-400 px-1 ">
+                                Total <i class="pi pi-bolt text-yellow-500" />
+                            </div>
+                            <div class="border-y-1 border-right-1 p-1 border-round-right white-space-nowrap border-400 px-1 py-0">
+                                {{ computeAllConsumption() }} <span class="text-xxs">MW/h</span>
+                            </div>
+                        </div>
+
+                    </div>
                     <div class="p-inputgroup w-20rem">
                         <Dropdown v-model="selectedRecipe" :options="props.mainData.recipes" filter optionLabel="name" placeholder="Select a Recipe" class="w-full md:w-14rem">
                         </Dropdown>
