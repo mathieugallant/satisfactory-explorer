@@ -5,7 +5,7 @@ import Button from 'primevue/button';
 import Dropdown from 'primevue/dropdown';
 import DataView from 'primevue/dataview';
 const emit = defineEmits(['checkResetFD']);
-const helpOCValue = 0.675;
+let helpOCValue = 0.675;
 </script>
 
 <template>
