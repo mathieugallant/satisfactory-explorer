@@ -3,12 +3,17 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "update": "node ./data/updateGameData.js",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "d3": "^7.8.5",
+    "d3-collection": "^1.0.7",
+    "elementary-circuits-directed-graph": "^1.3.1",
     "jsonata": "^2.0.2",
+    "localforage": "^1.10.0",
     "primeflex": "^3.3.0",
     "primeicons": "^6.0.1",
     "primevue": "^3.27.0",
