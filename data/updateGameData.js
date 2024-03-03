@@ -67,7 +67,8 @@ const getDescriptions = (rawData) => {
           "produced": ["Build_FrackingSmasher_C"],
           "duration": "1.000000",
           "consumptionConstant": "0.000000",
-          "consumptionFactor": "1.000000"
+          "consumptionFactor": "1.000000",
+          "message": "Required to use ressource Nodes. One per ressource group."
         },
         {
           "class":"Recipe_PressureWater_C",
@@ -76,14 +77,14 @@ const getDescriptions = (rawData) => {
           "products": [
             {
               "class": "Desc_Water_C",
-              "quantity": "500"
+              "quantity": "0.5"
             }
           ],
           "produced": ["Build_FrackingExtractor_C"],
           "duration": "1.000000",
           "consumptionConstant": "0.000000",
           "consumptionFactor": "0.000000",
-          "message": "Requires a Resource Well Pressurizer. Add one for accurate power estimation."
+          "message": "Requires a Resource Well Pressurizer"
         },
         {
           "class":"Recipe_PressureLiquidOil_C",
@@ -92,14 +93,14 @@ const getDescriptions = (rawData) => {
           "products": [
             {
               "class": "Desc_LiquidOil_C",
-              "quantity": "500"
+              "quantity": "0.25"
             }
           ],
           "produced": ["Build_FrackingExtractor_C"],
           "duration": "1.000000",
           "consumptionConstant": "0.000000",
           "consumptionFactor": "1.000000",
-          "message": "Requires a Resource Well Pressurizer. Add one for accurate power estimation."
+          "message": "Requires a Resource Well Pressurizer"
         },
         {
           "class":"Recipe_PressureNitrogen_C",
@@ -115,7 +116,7 @@ const getDescriptions = (rawData) => {
           "duration": "1.000000",
           "consumptionConstant": "0.000000",
           "consumptionFactor": "1.000000",
-          "message": "Requires a Resource Well Pressurizer. Add one for accurate power estimation."
+          "message": "Requires a Resource Well Pressurizer"
         }
       ];
       // Create the 3 "purity" specific recipes
