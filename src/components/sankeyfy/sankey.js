@@ -16,6 +16,11 @@ function justify(node, n) {
     return node.sourceLinks.length ? node.depth : n - 1;
 }
 
+// The depth of a node when the nodeAlign (align) is set to 'justify'
+function left(node, n) {
+    return node.targetLinks.length ? node.depth : 0;
+}
+
 // sort links' breadth (ie top to bottom in a column), based on their source nodes' breadths
 function ascendingSourceBreadth(a, b) {
     return ascendingBreadth(a.source, b.source) || a.index - b.index
@@ -109,7 +114,7 @@ export const Plot = function () {
         dx = 24, // nodeWidth
         py, // nodePadding, for vertical postioning
         id = defaultId,
-        align = justify,
+        align = left,
         nodes = defaultNodes,
         links = defaultLinks,
         iterations = 32,

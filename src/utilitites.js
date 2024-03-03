@@ -50,6 +50,27 @@ export const computeFactoryConsumption = (factoryConfig) => {
     }, 0)*100)/100;
 };
 
+export const conputeGlobalConsumption = (factories) => {
+    console.log(factories)
+    let globalPower = 0;
+    factories.forEach((factory) => globalPower += Object.values(factory.factoryData).reduce((p, data) => {
+        const prodData = getData(data.class);
+        const defaultProducer = descs[prodData.produced.filter(x => !manualBuildClasses.includes(x))?.[0]];
+    
+        
+        let consumption = Number(defaultProducer?.powerConsumption) || Number(prodData?.consumptionFactor);
+        
+        if(!consumption || !defaultProducer ) {
+            return p;
+        }
+        
+        const maxConsumption =  consumption * Math.pow(data.overclock,defaultProducer.powerExponent) * data.numMachines;
+    
+        return p + maxConsumption;
+    }, 0))
+    return Math.round(globalPower * 100) / 100
+}
+
 export const computeConsumption = (data) => {
     const prodData = getData(data.class);
     const defaultProducer = descs[prodData.produced.filter(x => !manualBuildClasses.includes(x))?.[0]];
@@ -82,6 +103,16 @@ export const getAllNetDefecits = (factoryConfig) => {
         const stringB = getName(b.name);
         return stringA.localeCompare(stringB);
     });
+};
+
+export const getGlobalProductDefecit = (pClass, factories) => {
+    const res = {desc: pClass, name: getName(pClass), value: 0};
+    factories.forEach(f => {
+        res.value += computeSupply(pClass, f.factoryData);
+    });
+    
+    res.value = roundNumber(res.value);
+    return res;
 };
 
 export const getFactoryClasses = (factoryConfig) => {

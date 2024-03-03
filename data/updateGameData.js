@@ -61,7 +61,7 @@ const getDescriptions = (rawData) => {
         },
         {
           "class":"Recipe_Pressurerizer_C",
-          "name":"Deployed Resource Well Pressurizer",
+          "name":"Resource Well Pressurizer",
           "ingredients": [],
           "products": [],
           "produced": ["Build_FrackingSmasher_C"],
@@ -82,7 +82,8 @@ const getDescriptions = (rawData) => {
           "produced": ["Build_FrackingExtractor_C"],
           "duration": "1.000000",
           "consumptionConstant": "0.000000",
-          "consumptionFactor": "0.000000"
+          "consumptionFactor": "0.000000",
+          "message": "Requires a Resource Well Pressurizer. Add one for accurate power estimation."
         },
         {
           "class":"Recipe_PressureLiquidOil_C",
@@ -97,7 +98,8 @@ const getDescriptions = (rawData) => {
           "produced": ["Build_FrackingExtractor_C"],
           "duration": "1.000000",
           "consumptionConstant": "0.000000",
-          "consumptionFactor": "1.000000"
+          "consumptionFactor": "1.000000",
+          "message": "Requires a Resource Well Pressurizer. Add one for accurate power estimation."
         },
         {
           "class":"Recipe_PressureNitrogen_C",
@@ -112,7 +114,8 @@ const getDescriptions = (rawData) => {
           "produced": ["Build_FrackingExtractor_C"],
           "duration": "1.000000",
           "consumptionConstant": "0.000000",
-          "consumptionFactor": "1.000000"
+          "consumptionFactor": "1.000000",
+          "message": "Requires a Resource Well Pressurizer. Add one for accurate power estimation."
         }
       ];
       // Create the 3 "purity" specific recipes
@@ -160,7 +163,6 @@ const getDescriptions = (rawData) => {
         const i = recipes.findIndex(r => r.class == p);
         if (i<0) console.error("Can't find ", p)
         for ({mk, mkf} of  [{mk: '1', mkf: 1}, {mk: '2', mkf: 2}, {mk: '3', mkf: 4}]) {
-      console.log(p, mk, mkf)
           for (purity of [{l: 'Impure', f: 2}, {l: 'Normal', f: 2}, {l: 'Pure', f: 4}]) {
             if (mk === '1' && purity.l === 'Impure') continue;
             recipes.push({
@@ -169,7 +171,8 @@ const getDescriptions = (rawData) => {
               class: recipes[i].class + purity.l + 'Mk' + mk,
               name: recipes[i].name + ` Mk${mk} (${purity.l})`,
               products: [{...recipes[i].products[0], quantity: recipes[i].products[0].quantity * purity.f * mkf}],
-              produced: [PurityAndMkRecipes[p].replace('%', mk)]
+              produced: [PurityAndMkRecipes[p].replace('%', mk)],
+              message: mk === '3' && purity.f === 4 ? "Maximum output is 780 due to belt speed limitations." : null
             })
           }
         }

@@ -1,19 +1,18 @@
 <script setup>
 import TabContent from './TabContent.vue';
+import FactorySelector from './FactorySelector.vue';
 import localForage from 'localforage';
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generator';
 
 import Textarea from 'primevue/textarea';
 import Dialog from 'primevue/dialog';
-import Dropdown from 'primevue/dropdown';
 import Button from 'primevue/button';
 import AutoComplete from 'primevue/autocomplete';
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from 'primevue/usetoast';
 import Sankeyfy from './Sankeyfy.vue';
 import {
-    computeFactoryConsumption,
     getAllNetDefecits,
     getAllNetProduction,
 } from "../utilitites";
@@ -32,30 +31,44 @@ const createNewFactory = ref({});
 const nameSuggestions = ref([]);
 const loading = ref(true);
 const showGlobalOverview = ref(false);
-const graph = ref({nodes: [], links: []});
+const graph = ref({ nodes: [], links: [] });
 
 localForage.getItem('factoryData').then(data => {
     factories.value = data || [];
     factory.value = factories.value[0];
-    convertFactoriesToGraph();
     loading.value = false;
 });
 
 const convertFactoriesToGraph = () => {
-    const tNodes = new Set();
+    const tNodes = {};
     graph.value.links = [];
+    graph.value.nodes = [];
     factories.value.forEach(f => {
-        tNodes.add(f.id);
+        graph.value.nodes.push({ name: f.id, data: { factory_id: f.id } })
         getAllNetProduction(f.factoryData).forEach(p => {
-            tNodes.add(p.name);
-            graph.value.links.push({source: f.id, target: p.name, value: p.value || 1});
+            tNodes[p.desc] ??= { name: p.name, desc: p.desc, production: 0, consumption: 0 };
+            tNodes[p.desc].production += p.value;
+            graph.value.links.push({ source: f.id, target: p.name, value: p.value || 1 });
         });
         getAllNetDefecits(f.factoryData).forEach(d => {
-            tNodes.add(d.name);
-            graph.value.links.push({target: f.id, source: d.name, value: d.value * -1});
+            tNodes[d.desc] ??= { name: d.name, desc: d.desc, production: 0, consumption: 0 };
+            tNodes[d.desc].consumption += d.value;
+            graph.value.links.push({ target: f.id, source: d.name, value: d.value * -1 });
         });
     });
-    graph.value.nodes = [...tNodes].map(n => {return {name: n}});
+    graph.value.nodes = [...graph.value.nodes, ...Object.values(tNodes).map(x => {
+        return {
+            name: x.name,
+            labels: [`${x.name}${x.consumption * -1 > x.production ? ' 🚨' : ''}`],
+            highlight: x.consumption * -1 > x.production,
+            data: {
+                material_class: x.desc,
+                material_id: x.name,
+                produced: x.production,
+                consumed: x.consumption * -1,
+            },
+        };
+    })];
 }
 
 const makeName = () => {
@@ -73,7 +86,7 @@ const createFactory = () => {
 };
 
 const doCreateFactory = () => {
-    factories.value.push({id: createNewFactory.value.name.trim()});
+    factories.value.push({ id: createNewFactory.value.name.trim() });
     factory.value = factories.value.at(-1);
     createNewFactory.value.visible = false;
     saveChanges();
@@ -179,98 +192,99 @@ const showOverview = () => {
     showGlobalOverview.value = true;
 }
 
-const getSuggestions = ({query}) => {
+const getSuggestions = ({ query }) => {
     nameSuggestions.value = props.mainData.recipes.filter(r => r.name.indexOf(query) >= 0).map(r => r.name);
 };
+
+const handdleMouseClick = (e) => {
+    const data = e.detail.data;
+    if (data.factory_id) {
+        if (data.factory_id !== factory.value.id) {
+            factory.value = factories.value.find(f => f.id === data.factory_id);
+        }
+    }
+    if (data.factory_id || (data.material_class && data.produced === 0 )) {
+        showGlobalOverview.value = false;
+    }
+};
+
+onMounted(() => {
+    window.addEventListener('sankey_node_clicked', handdleMouseClick);
+})
+
+onUnmounted(() => {
+    window.removeEventListener('sankey_node_clicked', handdleMouseClick);
+});
+
 </script>
 <template>
-    <Dialog v-model:visible="showGlobalOverview" modal header="Global Overview"  class="w-11" style="max-height: calc(100vh - 20px);">
-        <Sankeyfy :graph="graph" />
+    <Dialog v-model:visible="showGlobalOverview" modal header="Global Overview" class="w-11"
+        style="max-height: calc(100vh - 20px);">
+        <Sankeyfy :graph="graph" :factories="factories" />
     </Dialog>
-    <Dialog v-model:visible="createNewFactory.visible" modal header="Create a new Factory"  class="w-11 md:w-8 lg:w-6">
+    <Dialog v-model:visible="createNewFactory.visible" modal header="Create a new Factory" class="w-11 md:w-8 lg:w-6">
         <div class="flex flex-wrap gap-2">
             <div class="p-inputgroup flex-1">
-                <span class="p-inputgroup-addon cursor-pointer" @click="() => createNewFactory.name = makeName() + ' Factory'"  title="Generate a random name">
+                <span class="p-inputgroup-addon cursor-pointer"
+                    @click="() => createNewFactory.name = makeName() + ' Factory'" title="Generate a random name">
                     🏭
                 </span>
-                <AutoComplete v-model="createNewFactory.name" :suggestions="nameSuggestions" @complete="getSuggestions" :completeOnFocus="true" />
+                <AutoComplete v-model="createNewFactory.name" :suggestions="nameSuggestions" @complete="getSuggestions"
+                    :completeOnFocus="true" />
             </div>
-            <Button label="Create" @click="doCreateFactory()" :disabled="!createNewFactory.name.trim() || factories.find(f => f.id === createNewFactory.name.trim())"/>
+            <Button label="Create" @click="doCreateFactory()"
+                :disabled="!createNewFactory.name.trim() || factories.find(f => f.id === createNewFactory.name.trim())" />
         </div>
     </Dialog>
     <Dialog v-model:visible="showChangeFactoryName.visible" modal header="Edit Factory Name" class="w-11 md:w-8 lg:w-6">
         <div class="flex flex-wrap gap-2">
             <div class="p-inputgroup flex-1">
-                <span class="p-inputgroup-addon cursor-pointer" @click="() => showChangeFactoryName.newFactoryName = makeName() + ' Factory'"  title="Generate a random name">
+                <span class="p-inputgroup-addon cursor-pointer"
+                    @click="() => showChangeFactoryName.newFactoryName = makeName() + ' Factory'"
+                    title="Generate a random name">
                     🏭
                 </span>
-                <AutoComplete v-model="showChangeFactoryName.newFactoryName" :suggestions="nameSuggestions" @complete="getSuggestions" :completeOnFocus="true" />
+                <AutoComplete v-model="showChangeFactoryName.newFactoryName" :suggestions="nameSuggestions"
+                    @complete="getSuggestions" :completeOnFocus="true" />
             </div>
-            <Button label="Update" @click="updateFactoryName()" :disabled="!showChangeFactoryName.newFactoryName.trim() || factories.find(f => f.id === showChangeFactoryName.newFactoryName.trim())"/>
+            <Button label="Update" @click="updateFactoryName()"
+                :disabled="!showChangeFactoryName.newFactoryName.trim() || factories.find(f => f.id === showChangeFactoryName.newFactoryName.trim())" />
         </div>
     </Dialog>
     <Dialog v-model:visible="showPasteFactory.visible" modal header="Import Factory" class="w-11 md:w-8 lg:w-6">
         <div class="flex flex-column w-full">
             <label>Import Factory As :</label>
             <div class="p-inputgroup flex-1 mb-2">
-                <span class="p-inputgroup-addon cursor-pointer" @click="() => showPasteFactory.importName = makeName() + ' Factory'"  title="Generate a random name">
+                <span class="p-inputgroup-addon cursor-pointer"
+                    @click="() => showPasteFactory.importName = makeName() + ' Factory'" title="Generate a random name">
                     🏭
                 </span>
-                <AutoComplete v-model="showPasteFactory.importName" :suggestions="nameSuggestions" @complete="getSuggestions" :completeOnFocus="true" />
+                <AutoComplete v-model="showPasteFactory.importName" :suggestions="nameSuggestions"
+                    @complete="getSuggestions" :completeOnFocus="true" />
             </div>
             <label>Paste factory data in this box :</label>
             <Textarea v-model="showPasteFactory.content" class="mb-2" />
             <div class="w-full flex justify-content-end">
-                <Button label="Import" @click="importFactory()"/>
+                <Button label="Import" @click="importFactory()" />
             </div>
         </div>
     </Dialog>
 
     <div class="flex flex-column md:h-screen md:mt-5 md:absolute md:top-0 w-full">
-        <div class="md:block hidden w-full z-4">
-            <div class="flex justify-content-between bg-ficsit-secondary p-2">        
-                <div class="p-inputgroup">
-                    <Button v-if="factory" icon="pi pi-globe" severity="secondary" @click="showOverview" title="Global View"/>
-                </div>
-                <div class="p-inputgroup w-full md:w-8 lg:w-6 xl:w-4">
-                    <Button v-if="factory" icon="pi pi-copy" severity="info"  @click="factoryToClipboard()" title="Copy factory to clipboard"/>
-                    <Button icon="pi pi-cloud-download" severity="warning"  @click="pasteFactory()" title="Import factory"/>
-                    <Button v-if="factory" icon="pi pi-trash" severity="danger"  @click="confirmDelete()" title="Delete factory"/>
-                    <Button v-if="factory" icon="pi pi-pencil" severity="success" @click="editFactoryName()" title="Edit factory" />
-                    <Dropdown v-model="factory" :options="factories" filter optionLabel="id" placeholder="Select a factory" />        
-                    <Button icon="pi pi-plus" @click="createFactory" title="Create new factory"/>
-                </div>
-            </div>
-        </div>
-        <div class="flex flex-column bg-ficsit-secondary p-2 md:hidden z-4">
-            <div class="flex justify-content-between mb-2">
-                <div class="p-inputgroup">
-                    <Button v-if="factory" icon="pi pi-globe" severity="secondary"  @click="showOverview" title="Global View"/>
-                </div>
-                <div class="p-inputgroup flex-grow-1 justify-content-end">
-                    <Button v-if="factory" icon="pi pi-copy" severity="info"  @click="factoryToClipboard()" title="Copy factory to clipboard"/>
-                    <Button icon="pi pi-cloud-download" severity="warning"  @click="pasteFactory()"  title="Import factory"/>
-                    <Button v-if="factory" icon="pi pi-trash" severity="danger"  @click="confirmDelete()"  title="Delete factory"/>
-                    <Button v-if="factory" icon="pi pi-pencil" severity="success" @click="editFactoryName()"  title="Edit factory" />
-                </div>
-            </div>
-            <div class="p-inputgroup w-full">
-                <Dropdown v-model="factory" :options="factories" filter optionLabel="id" placeholder="Select a factory" />        
-                <Button icon="pi pi-plus" @click="createFactory" title="Create new factory"/>
-            </div>
-        </div>
+        <FactorySelector
+            :callbacks="{ showOverview, factoryToClipboard, pasteFactory, confirmDelete, editFactoryName, createFactory }"
+            :factories="factories" v-model="factory" />
         <div v-if="factory" class="p-2 md:absolute md:top-0 md:pt-7 w-full z-3">
-            <TabContent :mainData="props.mainData" :modelValue="factory" @update:modelValue="(data) => saveChanges(factory, data)"/>
+            <TabContent :mainData="props.mainData" :modelValue="factory" :factories="factories"
+                @update:modelValue="(data) => saveChanges(factory, data)" />
         </div>
     </div>
 </template>
 
-<style scoped>
-.text-xxs {
+<style scoped>.text-xxs {
     font-size: 0.5rem;
 }
 
 .anti-padding {
     margin: -1rem;
-}
-</style>
+}</style>

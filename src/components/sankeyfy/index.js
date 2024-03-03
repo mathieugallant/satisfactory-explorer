@@ -272,7 +272,7 @@ function linkAngle(link) {
 function addCircularPathData(links) {
   let baseRadius = 1;
 
-  let circularLinkGap = 5;
+  let circularLinkGap = 1;
 
   //add the base data for each link
   links.forEach(function (link, i) {
@@ -348,13 +348,13 @@ function addCircularPathData(links) {
 
       //bottom links
       if (link.circularLinkType == "bottom") {
-        link.circularPathData.verticalFullExtent = Math.max(link.y0, link.y1) + 10 + link.circularPathData.verticalBuffer;
+        link.circularPathData.verticalFullExtent = Math.max(link.y0, link.y1) + link.circularPathData.verticalBuffer + Math.abs(link.y0 - link.y1);
         link.circularPathData.verticalLeftInnerExtent = link.circularPathData.verticalFullExtent - link.circularPathData.leftLargeArcRadius;
         link.circularPathData.verticalRightInnerExtent = link.circularPathData.verticalFullExtent - link.circularPathData.rightLargeArcRadius;
       }
       //top links
       else {
-        link.circularPathData.verticalFullExtent = Math.min(link.y0, link.y1) - 10 - link.circularPathData.verticalBuffer;
+        link.circularPathData.verticalFullExtent = Math.min(link.y0, link.y1) - 20 - link.circularPathData.verticalBuffer;
         link.circularPathData.verticalLeftInnerExtent = link.circularPathData.verticalFullExtent + link.circularPathData.leftLargeArcRadius;
         link.circularPathData.verticalRightInnerExtent = link.circularPathData.verticalFullExtent + link.circularPathData.rightLargeArcRadius;
       }
