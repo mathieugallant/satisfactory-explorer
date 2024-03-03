@@ -231,9 +231,9 @@ onUnmounted(() => {
                 </span>
                 <AutoComplete v-model="createNewFactory.name" :suggestions="nameSuggestions" @complete="getSuggestions"
                     :completeOnFocus="true" />
+                <Button label="Create" @click="doCreateFactory()"
+                    :disabled="!createNewFactory.name.trim() || factories.find(f => f.id === createNewFactory.name.trim())" />
             </div>
-            <Button label="Create" @click="doCreateFactory()"
-                :disabled="!createNewFactory.name.trim() || factories.find(f => f.id === createNewFactory.name.trim())" />
         </div>
     </Dialog>
     <Dialog v-model:visible="showChangeFactoryName.visible" modal header="Edit Factory Name" class="w-11 md:w-8 lg:w-6">
@@ -246,9 +246,9 @@ onUnmounted(() => {
                 </span>
                 <AutoComplete v-model="showChangeFactoryName.newFactoryName" :suggestions="nameSuggestions"
                     @complete="getSuggestions" :completeOnFocus="true" />
+                <Button label="Update" @click="updateFactoryName()"
+                    :disabled="!showChangeFactoryName.newFactoryName.trim() || factories.find(f => f.id === showChangeFactoryName.newFactoryName.trim())" />
             </div>
-            <Button label="Update" @click="updateFactoryName()"
-                :disabled="!showChangeFactoryName.newFactoryName.trim() || factories.find(f => f.id === showChangeFactoryName.newFactoryName.trim())" />
         </div>
     </Dialog>
     <Dialog v-model:visible="showPasteFactory.visible" modal header="Import Factory" class="w-11 md:w-8 lg:w-6">
