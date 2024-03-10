@@ -140,7 +140,7 @@ onUnmounted(() => {
     </div>
     <ConsumptionTag :consumption="conputeGlobalConsumption(props.factories)"  prefix="Total Global "/>
     <ProgressBar v-if="loading" class="mt-2" mode="indeterminate" style="height: 6px"></ProgressBar>
-    <div :id="snkid"  @mousemove="updateToolTipPosition" class="sankey-container"></div>
+    <div :id="snkid"  @mousemove="updateToolTipPosition" class="sankey-container" style="max-height: 60vw;"></div>
 </template>
 
 <style>
