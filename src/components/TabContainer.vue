@@ -44,20 +44,21 @@ const convertFactoriesToGraph = () => {
     graph.value.links = [];
     graph.value.nodes = [];
     factories.value.forEach(f => {
-        graph.value.nodes.push({ name: f.id, data: { factory_id: f.id } })
+        graph.value.nodes.push({ id: f.id, name: f.id, data: { factory_id: f.id } })
         getAllNetProduction(f.factoryData).forEach(p => {
-            tNodes[p.desc] ??= { name: p.name, desc: p.desc, production: 0, consumption: 0 };
+            tNodes[p.desc] ??= { id: p.name, name: p.name, desc: p.desc, production: 0, consumption: 0 };
             tNodes[p.desc].production += p.value;
             graph.value.links.push({ source: f.id, target: p.name, value: p.value || 1 });
         });
         getAllNetDefecits(f.factoryData).forEach(d => {
-            tNodes[d.desc] ??= { name: d.name, desc: d.desc, production: 0, consumption: 0 };
+            tNodes[d.desc] ??= { id: d.name, name: d.name, desc: d.desc, production: 0, consumption: 0 };
             tNodes[d.desc].consumption += d.value;
             graph.value.links.push({ target: f.id, source: d.name, value: d.value * -1 });
         });
     });
     graph.value.nodes = [...graph.value.nodes, ...Object.values(tNodes).map(x => {
         return {
+            id: x.name,
             name: x.name,
             labels: [`${x.name}${x.consumption * -1 > x.production ? ' 🚨' : ''}`],
             highlight: x.consumption * -1 > x.production,

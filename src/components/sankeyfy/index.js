@@ -7,8 +7,8 @@ export const sankeyfy = ({
   width = 1000, 
   height = 400, 
   logarithmic = false,
-  nodeWidth = 15, 
-  iterations = 32, 
+  nodeWidth = 25, 
+  iterations = 20, 
   nodePaddingRatio = 0.5,
   autoColor = true
 }) => {
@@ -28,10 +28,20 @@ export const sankeyfy = ({
   let sankeyLinks = sankeyData.links;
 
   var svg = d3.select(id).append("svg")
-    .attr("width", "100%");
+    .attr("width", "100%")
+    .attr("height", "100%");
+
+  svg.call(d3.zoom()
+    .extent([[0, 0], [width, height]])
+    .scaleExtent([1, 8])
+    .on("zoom", zoomed));    
   
   var g = svg.append("g")
     .attr("id", `${id}-main-svg-g`)
+
+  function zoomed({transform}) {
+    g.attr("transform", transform);
+  }
   
   var linkG = g.append("g")
     .attr("fill", "none")
@@ -42,12 +52,7 @@ export const sankeyfy = ({
   
   let depthExtent = d3.extent(data.nodes, function (d) { return d.depth; });
   
-  var colour = d3.scaleSequential(d3.interpolateCool)
-    .domain(depthExtent);
-  
-  //Adjust link Y's based on target/source Y positions
-  sortTargetLinks(sankeyNodes, sankeyLinks);
-  sortSourceLinks(sankeyNodes, sankeyLinks, height)
+  var colour = d3.scaleSequential(d3.interpolateCool).domain(depthExtent);
   
   //create paths for circular links
   sankeyLinks = addCircularPathData(sankeyLinks, height);
@@ -202,15 +207,6 @@ export const sankeyfy = ({
     .classed("highlight", function (d) { return d.highlight})
     .filter(function (d) {return d.color})
     .style("stroke", function (d) {return d.color});
-
-  d3.select(id).selectAll(".sankey-link")
-    .append("path")
-    .attr("class", "sankey-sub-link")
-    .attr("d", curveSankeyForceLink)
-    .style("stroke-width", function (d) { return Math.max(1, d.width)/3; })
-    .classed("highlight", function (d) { return d.highlight})
-    .filter(function (d) {return d.color || d.subColor})
-    .style("stroke", function (d) {return d.subColor || d.color});
   
     // Parse all circular links and look for the widest path (maxPath) to use as padding
     let maxPath = 0;
@@ -491,168 +487,4 @@ function linkSourceY(link) {
 function linkTargetY(link) {
   //return link.y1 + (link.target.y - link.target.y0);
   return link.y1;
-}
-
-
-function sortSourceLinks(sankeyNodes, sankeyLinks, height) {
-
-  sankeyNodes.forEach(function (node) {
-
-    //move any nodes up which are off the bottom
-    if ((node.y + (node.y1 - node.y0)) > height) {
-      node.y = node.y - ((node.y + (node.y1 - node.y0)) - height)
-    }
-
-    let nodesSourceLinks = sankeyLinks.filter(function (l) { return l.source.name == node.name });
-
-
-    //if more than 1 link then sort
-    if (nodesSourceLinks.length > 1) {
-      nodesSourceLinks.sort(function (link1, link2) {
-
-        //if both are not circular...
-        if (!link1.circular && !link2.circular) {
-
-
-          let link1Angle = linkAngle(link1);
-          let link2Angle = linkAngle(link2);
-
-          return link1Angle - link2Angle
-
-        }
-
-        //if only one is circular, the move top links up, or bottom links down
-        if (link1.circular && !link2.circular) {
-          return link1.circularLinkType == "top" ? -1 : 1;
-        }
-        else if (link2.circular && !link1.circular) {
-          return link2.circularLinkType == "top" ? 1 : -1;
-        }
-
-        //if both links are circular...
-        if (link1.circular && link2.circular) {
-
-          //...and they both loop the same way (both top)
-          if (link1.circularLinkType === link2.circularLinkType && link1.circularLinkType == "top") {
-            //...and they both connect to a target with same depth, then sort by the target's y
-            if (link1.target.depth === link2.target.depth) {
-              return link1.target.y1 - link2.target.y1
-
-            }
-            //...and they connect to different depth targets, then sort by how far back they
-            else {
-              return link1.target.depth - link2.target.depth;
-            }
-          }
-
-          //...and they both loop the same way (both bottom)
-          else if (link1.circularLinkType === link2.circularLinkType && link1.circularLinkType == "bottom") {
-            //...and they both connect to a target with same depth, then sort by the target's y
-            if (link1.target.depth === link2.target.depth) {
-              return link2.target.y1 - link1.target.y1;
-
-            }
-            //...and they connect to different depth targets, then sort by how far back they
-            else {
-              return link1.target.depth - link2.target.depth;
-            }
-          }
-
-
-          //...and they loop around different ways, the move top up and bottom down
-          else {
-            return link1.circularLinkType == "top" ? -1 : 1;
-          }
-        }
-
-      })
-
-    }
-
-    //update y0 for links
-    let ySourceOffset = node.y0
-
-    nodesSourceLinks.forEach(function (link) {
-      link.y0 = ySourceOffset + (link.width / 2);
-      ySourceOffset = ySourceOffset + link.width;
-    })
-
-  })
-
-}
-
-function sortTargetLinks(sankeyNodes, sankeyLinks) {
-  sankeyNodes.forEach(function (node) {
-
-    let nodesTargetLinks = sankeyLinks.filter(function (l) { return l.target.name == node.name });
-
-    if (nodesTargetLinks.length > 1) {
-      nodesTargetLinks.sort(function (link1, link2) {
-
-        //if both are not circular, the base on the target y position
-        if (!link1.circular && !link2.circular) {
-
-          let link1Angle = linkAngle(link1);
-          let link2Angle = linkAngle(link2);
-
-          return link2Angle - link1Angle;
-
-        }
-
-        //if only one is circular, the move top links up, or bottom links down
-        if (link1.circular && !link2.circular) {
-          return link1.circularLinkType == "top" ? -1 : 1;
-        }
-        else if (link2.circular && !link1.circular) {
-          return link2.circularLinkType == "top" ? 1 : -1;
-        }
-
-        //if both links are circular...
-        if (link1.circular && link2.circular) {
-
-          //...and they both loop the same way (both top)
-          if (link1.circularLinkType === link2.circularLinkType && link1.circularLinkType == "top") {
-            //...and they both connect to a target with same depth, then sort by the target's y
-            if (link1.source.depth === link2.source.depth) {
-              return link1.source.y1 - link2.source.y1
-
-            }
-            //...and they connect to different depth targets, then sort by how far back they
-            else {
-              return link1.source.depth - link2.source.depth;
-            }
-          }
-
-          //...and they both loop the same way (both bottom)
-          else if (link1.circularLinkType === link2.circularLinkType && link1.circularLinkType == "bottom") {
-            //...and they both connect to a target with same depth, then sort by the target's y
-            if (link1.source.depth === link2.source.depth) {
-              return link2.source.y1 - link1.source.y1;
-
-            }
-            //...and they connect to different depth targets, then sort by how far back they
-            else {
-              return link2.source.depth - link1.source.depth;
-            }
-          }
-
-          //...and they loop around different ways, the move top up and bottom down
-          else {
-            return link1.circularLinkType == "top" ? -1 : 1;
-          }
-        }
-
-      })
-
-    }
-
-    //update y1 for links
-    let yTargetOffset = node.y0;
-
-    nodesTargetLinks.forEach(function (link) {
-      link.y1 = yTargetOffset + (link.width / 2);
-      yTargetOffset = yTargetOffset + link.width;
-    })
-  })
-
 }

@@ -11,6 +11,7 @@ import ConsumptionTag from './ConsumptionTag.vue';
 
 const props = defineProps(['graph', 'factories']);
 const showToolTip = ref(false);
+const toolTipPosSet = ref(false);
 const tooltipData = ref({});
 const tooltipDiv = ref();
       
@@ -19,13 +20,15 @@ const snkid = 'snk-' + String(Math.random()).split('.')[1]
 const emits = defineEmits(['goToFactory']);
 
 const updateToolTipPosition = (e) => {
-    if (showToolTip.value) {
+    if (showToolTip.value && ! toolTipPosSet.value) {
         const containerWidth = tooltipDiv.value.offsetWidth;
         const containerHeight = tooltipDiv.value.offsetHeight;
-        const isPastMidwayX = e.clientX > window.innerWidth / 2;
-        const isPastMidwayY = e.clientY > window.innerHeight / 2;
-        tooltipDiv.value.style.left = `${e.layerX + (isPastMidwayX ? (containerWidth + 20) * -1: 20)}px`;
-        tooltipDiv.value.style.top = `${e.layerY + (isPastMidwayY ? (containerHeight + 20) * -1: 20)}px`;
+        const isPastMidwayX = e.clientX + 200 > window.innerWidth / 2;
+        const isPastMidwayY = e.clientY + 200 > window.innerHeight / 2;
+        tooltipDiv.value.style.left = `${Math.max(e.layerX + (isPastMidwayX ? (containerWidth + 200) * -1: 200), 20)}px`;
+        tooltipDiv.value.style.top = `${Math.max(e.layerY + (isPastMidwayY ? (containerHeight + 200) * -1: 200), 150)}px`;
+
+        toolTipPosSet.value = true;
     }
 };
 const handdleMouseOver = (e) => {
@@ -34,17 +37,38 @@ const handdleMouseOver = (e) => {
 };
 const handdleMouseOut = (e) => {
     showToolTip.value = false;
+    toolTipPosSet.value = false;
 };
 const handdleMouseClick = (e) => {
     showToolTip.value = false;
     if (e.detail.data?.factory_id) emits('goToFactory', e.detail.data);
 };
 
+const computeSankeyProps = () => {
+    const pathRecursive = (source, depth = 0, visited = []) => {
+        visited.push(source);
+        return depth + props.graph.links.filter(l => l.source === source && !visited.includes(l.target))
+            .map(l => pathRecursive(l.target, depth+1, visited))
+            .reduce((p, c) => p > c ? p : c, 0);
+    }
+    
+    const paths = props.graph.links.map(l => {
+        return pathRecursive(l.source);
+    });
+
+
+    return {
+        width: paths.reduce((p, c) => p > c ? p : c, 0) * 80,
+        height: document.getElementById(snkid)?.clientHeight
+    };
+}
+
 onMounted(() => {
     window.addEventListener('sankey_node_mouseover', handdleMouseOver);
     window.addEventListener('sankey_node_mouseout', handdleMouseOut);
     window.addEventListener('sankey_node_clicked', handdleMouseClick);
-    sankeyfy({data: props.graph, id: '#' + snkid, logarithmic: false });
+    const sankeyProps = computeSankeyProps();
+    sankeyfy({data: props.graph, id: '#' + snkid, ...sankeyProps });
 })
 
 onUnmounted(() => {
@@ -102,10 +126,13 @@ onUnmounted(() => {
         </div>
     </div>
     <ConsumptionTag :consumption="conputeGlobalConsumption(props.factories)"  prefix="Total Global "/>
-    <div :id="snkid" @mousemove="updateToolTipPosition"></div>
+    <div :id="snkid"  @mousemove="updateToolTipPosition" class="sankey-container"></div>
 </template>
 
 <style>
+    .sankey-container {
+        height: 80vh;
+    }
     .surface-50-trans {
         background-color: #262b2caa;
     }
@@ -146,16 +173,6 @@ onUnmounted(() => {
         opacity: 0.4;
     }
 
-    .sankey-sub-link {
-        opacity: 0.6;
-        pointer-events: none;
-        stroke: #AAAAAA;
-        stroke-dasharray: 4;
-        stroke-dashoffset: 50;
-        animation: dash 1s linear forwards;
-        animation-iteration-count: infinite;
-    }
-
     .sankey-top-link.highlight {
         animation: pblink 0.5s linear alternate;
         animation-iteration-count: infinite;
@@ -176,12 +193,6 @@ onUnmounted(() => {
         to {
             stroke: #b3921d;
             fill: #665311;
-        }
-    }
-
-    @keyframes dash {
-        to {
-            stroke-dashoffset: 0;
         }
     }
 </style>

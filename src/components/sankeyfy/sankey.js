@@ -9,14 +9,13 @@ function constant(x) {
     return function() {
       return x;
     };
-  }
+}
 
 // The depth of a node when the nodeAlign (align) is set to 'justify'
 function justify(node, n) {
     return node.sourceLinks.length ? node.depth : n - 1;
 }
 
-// The depth of a node when the nodeAlign (align) is set to 'justify'
 function left(node, n) {
     return node.targetLinks.length ? node.depth : 0;
 }
@@ -35,14 +34,20 @@ function ascendingTargetBreadth(a, b) {
 // if both nodes have circular links, or both don't have circular links, then sort by the top (y0) of the node
 // else push nodes that have top circular links to the top, and nodes that have bottom circular links to the bottom
 function ascendingBreadth(a, b) {
-    if (a.partOfCycle === b.partOfCycle) {
-        return a.y0 - b.y0
-    } else {
-        if (a.circularLinkType === 'top' || b.circularLinkType === 'bottom') {
-            return -1
+    if (a.partOfCycle || b.partOfCycle) {
+        if (a.partOfCycle === b.partOfCycle) {
+            return a.y0 - b.y0
         } else {
-            return 1
+            if (a.circularLinkType === 'top' || b.circularLinkType === 'bottom') {
+                return -1
+            } else {
+                return 1
+            }
         }
+    }
+    else {
+        return (a.sourceLinks.reduce((p, c) => c.target.y0 + p, 0) / a.sourceLinks.length) - (b.targetLinks.reduce((p, c) => c.source.y0 + p, 0) / b.targetLinks.length)
+        
     }
 }
 
@@ -117,7 +122,7 @@ export const Plot = function () {
         align = left,
         nodes = defaultNodes,
         links = defaultLinks,
-        iterations = 32,
+        iterations = 20,
         circularLinkGap = 2,
         paddingRatio,
         sortNodes = null
@@ -129,7 +134,7 @@ export const Plot = function () {
         }
 
         // Process the graph's nodes and links, setting their positions
-
+        
         // 1.  Associate the nodes with their respective links, and vice versa
         computeNodeLinks(graph)
 
@@ -156,24 +161,23 @@ export const Plot = function () {
         computeNodeBreadths(graph, iterations, id)
         computeLinkBreadths(graph)
 
+        resolveNodesOverlap(graph, y0, py)
+
         // 7.  Sort links per node, based on the links' source/target nodes' breadths
         // 8.  Adjust nodes that overlap links that span 2+ columns
-        var linkSortingIterations = 4; //Possibly let user control this number, like the iterations over node placement
+        var linkSortingIterations = 3; //Possibly let user control this number, like the iterations over node placement
         for (var iteration = 0; iteration < linkSortingIterations; iteration++) {
-
-            sortSourceLinks(graph, y1, id)
-            sortTargetLinks(graph, y1, id)
             resolveNodeLinkOverlaps(graph, y0, y1, id)
             sortSourceLinks(graph, y1, id)
             sortTargetLinks(graph, y1, id)
-
         }
 
         // 8.1  Fix nodes overlapping after sortNodes
         resolveNodesOverlap(graph, y0, py)
 
+
         // 8.2  Adjust node and link positions back to fill height of chart area if compressed
-        fillHeight(graph, y0, y1)
+        //fillHeight(graph, y0, y1)
 
         return graph
     } // end of sankeyCircular function
@@ -427,8 +431,6 @@ export const Plot = function () {
         graph.nodes.forEach(function (node) {
             node.column = sortNodes !== null ? node[sortNodes] : Math.floor(align.call(null, node, x))
         })
-
-
     }
 
     // Assign nodes' breadths, and then shift nodes that overlap (resolveCollisions)
@@ -442,17 +444,16 @@ export const Plot = function () {
             .map(function (d) {
                 return d.values
             })
-
+            
         initializeNodeBreadth(id)
-        resolveCollisions()
+        // resolveCollisions()
 
-        for (var alpha = 1, n = iterations; n > 0; --n) {
-            relaxLeftAndRight((alpha *= 0.99), id)
-            resolveCollisions()
-        }
+        // for (var alpha = 1, n = iterations; n > 0; --n) {
+        //     relaxLeftAndRight((alpha *= 0.99), id)
+        //     resolveCollisions()
+        // }
 
         function initializeNodeBreadth(id) {
-
             //override py if nodePadding has been set
             if (paddingRatio) {
                 var padding = Infinity
@@ -469,7 +470,6 @@ export const Plot = function () {
 
             //calculate the widths of the links
             ky = ky * scale
-
             graph.links.forEach(function (link) {
                 link.width = link.value * ky
             })
@@ -485,39 +485,14 @@ export const Plot = function () {
                 link.width = link.value * ky
             })
 
+            // Assign node height based on value and scale
+            // Nodes are initially all set at the top (y0) of the graph
             columns.forEach(function (nodes) {
-                var nodesLength = nodes.length
                 nodes.forEach(function (node, i) {
-                    if (node.depth == (columns.length - 1) && nodesLength == 1) {
-                        node.y0 = y1 / 2 - (node.value * ky)
-                        node.y1 = node.y0 + node.value * ky
-                    } else if (node.depth == 0 && nodesLength == 1) {
-                        node.y0 = y1 / 2 - (node.value * ky)
-                        node.y1 = node.y0 + node.value * ky
-                    } else if (node.partOfCycle) {
-                        if (numberOfNonSelfLinkingCycles(node, id) == 0) {
-                            node.y0 = y1 / 2 + i
-                            node.y1 = node.y0 + node.value * ky
-                        } else if (node.circularLinkType == 'top') {
-                            node.y0 = y0 + i
-                            node.y1 = node.y0 + node.value * ky
-                        } else {
-                            node.y0 = y1 - node.value * ky - i
-                            node.y1 = node.y0 + node.value * ky
-                        }
-                    } else {
-                        if (margin.top == 0 || margin.bottom == 0) {
-                            node.y0 = ((y1 - y0) / nodesLength) * i
-                            node.y1 = node.y0 + node.value * ky
-                        } else {
-                            node.y0 = (y1 - y0) / 2 - nodesLength / 2 + i
-                            node.y1 = node.y0 + node.value * ky
-                        }
-                    }
+                    node.y0 = y0
+                    node.y1 = node.y0 + node.value * ky
                 })
             })
-
-
         }
 
         // For each node in each column, check the node's vertical position in relation to its targets and sources vertical position

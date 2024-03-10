@@ -51,7 +51,6 @@ export const computeFactoryConsumption = (factoryConfig) => {
 };
 
 export const conputeGlobalConsumption = (factories) => {
-    console.log(factories)
     let globalPower = 0;
     factories.forEach((factory) => globalPower += Object.values(factory.factoryData).reduce((p, data) => {
         const prodData = getData(data.class);
