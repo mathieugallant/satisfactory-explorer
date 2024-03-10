@@ -1,5 +1,6 @@
 <script setup>
-import { onMounted, ref, onUnmounted } from 'vue';
+import { onMounted, ref, onUnmounted, nextTick } from 'vue';
+import ProgressBar from 'primevue/progressbar';
 import { sankeyfy } from './sankeyfy';
 import {
     computeFactoryConsumption,
@@ -12,6 +13,7 @@ import ConsumptionTag from './ConsumptionTag.vue';
 const props = defineProps(['graph', 'factories']);
 const showToolTip = ref(false);
 const toolTipPosSet = ref(false);
+const loading = ref(true);
 const tooltipData = ref({});
 const tooltipDiv = ref();
       
@@ -58,8 +60,10 @@ const computeSankeyProps = () => {
 
 
     return {
-        width: paths.reduce((p, c) => p > c ? p : c, 0) * 80,
-        height: document.getElementById(snkid)?.clientHeight
+        width: document.getElementById(snkid)?.clientHeight,
+        height: document.getElementById(snkid)?.clientHeight,
+        logarithmic: false,
+        iterations: 60
     };
 }
 
@@ -67,8 +71,7 @@ onMounted(() => {
     window.addEventListener('sankey_node_mouseover', handdleMouseOver);
     window.addEventListener('sankey_node_mouseout', handdleMouseOut);
     window.addEventListener('sankey_node_clicked', handdleMouseClick);
-    const sankeyProps = computeSankeyProps();
-    sankeyfy({data: props.graph, id: '#' + snkid, ...sankeyProps });
+    nextTick(() => sankeyfy({data: props.graph, id: '#' + snkid, ...computeSankeyProps()}).then(() => loading.value = false));
 })
 
 onUnmounted(() => {
@@ -126,6 +129,7 @@ onUnmounted(() => {
         </div>
     </div>
     <ConsumptionTag :consumption="conputeGlobalConsumption(props.factories)"  prefix="Total Global "/>
+    <ProgressBar v-if="loading" class="mt-2" mode="indeterminate" style="height: 6px"></ProgressBar>
     <div :id="snkid"  @mousemove="updateToolTipPosition" class="sankey-container"></div>
 </template>
 
@@ -158,7 +162,7 @@ onUnmounted(() => {
 
     .sankey-label {
         cursor: default;
-        font-size: 60%;
+        font-size: 80%;
         font-weight: 400;
         fill: #fff;
         text-shadow: 0 1px 0 #5F668C;

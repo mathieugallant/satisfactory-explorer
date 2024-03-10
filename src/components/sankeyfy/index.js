@@ -8,7 +8,7 @@ export const sankeyfy = ({
   height = 400, 
   logarithmic = false,
   nodeWidth = 25, 
-  iterations = 20, 
+  iterations = 60, 
   nodePaddingRatio = 0.5,
   autoColor = true
 }) => {
@@ -22,202 +22,197 @@ export const sankeyfy = ({
     })
     .iterations(iterations);
 
-  let sankeyData = plot(data, logarithmic);
-
-  let sankeyNodes = sankeyData.nodes;
-  let sankeyLinks = sankeyData.links;
-
-  var svg = d3.select(id).append("svg")
-    .attr("width", "100%")
-    .attr("height", "100%");
-
-  svg.call(d3.zoom()
-    .extent([[0, 0], [width, height]])
-    .scaleExtent([1, 8])
-    .on("zoom", zoomed));    
+  return plot(data, logarithmic).then(sankeyData => {
+    let sankeyNodes = sankeyData.nodes;
+    let sankeyLinks = sankeyData.links;
   
-  var g = svg.append("g")
-    .attr("id", `${id}-main-svg-g`)
-
-  function zoomed({transform}) {
-    g.attr("transform", transform);
-  }
+    var svg = d3.select(id).append("svg")
+      .attr("width", "100%")
+      .attr("height", "100%");
   
-  var linkG = g.append("g")
-    .attr("fill", "none")
-    .selectAll("g");
+    svg.call(d3.zoom()
+      .extent([[0, 0], [width, height]])
+      .scaleExtent([0.9, 12])
+      .on("zoom", zoomed));    
+    
+    var g = svg.append("g").attr("id", `${id}-main-svg-g`);
   
-  var nodeG = g.append("g")
-    .selectAll("g");
+    function zoomed({transform}) {
+      g.attr("transform", transform);
+    }
+    
+    var linkG = g.append("g")
+      .attr("fill", "none")
+      .selectAll("g");
+    
+    var nodeG = g.append("g").selectAll("g");
+    
+    let depthExtent = d3.extent(data.nodes, function (d) { return d.depth; });
+    
+    var colour = d3.scaleSequential(d3.interpolateCool).domain(depthExtent);
+    
+    //create paths for circular links
+    sankeyLinks = addCircularPathData(sankeyLinks, height);
+    
+    //draw everything
+    var node = nodeG.data(sankeyNodes)
+      .enter()
+      .append("g");
+    
+    node.append("rect")
+      .attr("class", "sankey-node")
+      .attr("x", function (d) { return d.x0; }) //Use original sankey defined positions
+      .attr("y", function (d) { return d.y0; }) //Use force defined positions
+      .attr("height", function (d) { return d.y1 - d.y0; })
+      .attr("width", function (d) { return d.x1 - d.x0; })
+      .classed("highlight", function (d) { return d.highlight})
+      .on("mouseover", function (e, detail) {
+        const event = new CustomEvent('sankey_node_mouseover', { detail });
+        window.dispatchEvent(event);
+        let thisName = detail.name;
+        d3.select(id).selectAll(".sankey-link")
+          .classed("dim", function (l) {
+            return !(l.source.name == thisName || l.target.name == thisName);
+          })
+        d3.select(id).selectAll(".sankey-node")
+          .classed("dim", function (l) {
+            return !(l.name == thisName || l.sourceLinks.map(l => l.target.name).includes(thisName) || l.targetLinks.map(l => l.source.name).includes(thisName));
+          })
+        d3.select(id).selectAll(".sankey-label")
+          .classed("dim", function (l) {
+            return !(l.name == thisName || l.sourceLinks.map(l => l.target.name).includes(thisName) || l.targetLinks.map(l => l.source.name).includes(thisName));
+          })
+    
+      })
+      .on("mouseout", function (e, detail) {
+        const event = new CustomEvent('sankey_node_mouseout', { detail });
+        window.dispatchEvent(event);
+        d3.select(id).selectAll(".sankey-node").classed("dim", false);
+        d3.select(id).selectAll(".sankey-link").classed("dim", false);
+        d3.select(id).selectAll(".sankey-label").classed("dim", false);
+      })
+      .on("click", function (e, detail) {
+        const event = new CustomEvent('sankey_node_clicked', { detail });
+        window.dispatchEvent(event);
+      });
+    
+    const xpos = (d) => { return d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6; };
   
-  let depthExtent = d3.extent(data.nodes, function (d) { return d.depth; });
-  
-  var colour = d3.scaleSequential(d3.interpolateCool).domain(depthExtent);
-  
-  //create paths for circular links
-  sankeyLinks = addCircularPathData(sankeyLinks, height);
-  
-  //draw everything
-  var node = nodeG.data(sankeyNodes)
-    .enter()
-    .append("g");
-  
-  node.append("rect")
-    .attr("class", "sankey-node")
-    .attr("x", function (d) { return d.x0; }) //Use original sankey defined positions
-    .attr("y", function (d) { return d.y0; }) //Use force defined positions
-    .attr("height", function (d) { return d.y1 - d.y0; })
-    .attr("width", function (d) { return d.x1 - d.x0; })
-    .classed("highlight", function (d) { return d.highlight})
-    .on("mouseover", function (e, detail) {
-      const event = new CustomEvent('sankey_node_mouseover', { detail });
-      window.dispatchEvent(event);
-      let thisName = detail.name;
-      d3.select(id).selectAll(".sankey-link")
-        .classed("dim", function (l) {
-          return !(l.source.name == thisName || l.target.name == thisName);
-        })
-      d3.select(id).selectAll(".sankey-node")
-        .classed("dim", function (l) {
-          return !(l.name == thisName || l.sourceLinks.map(l => l.target.name).includes(thisName) || l.targetLinks.map(l => l.source.name).includes(thisName));
-        })
-      d3.select(id).selectAll(".sankey-label")
-        .classed("dim", function (l) {
-          return !(l.name == thisName || l.sourceLinks.map(l => l.target.name).includes(thisName) || l.targetLinks.map(l => l.source.name).includes(thisName));
-        })
-  
-    })
-    .on("mouseout", function (e, detail) {
-      const event = new CustomEvent('sankey_node_mouseout', { detail });
-      window.dispatchEvent(event);
-      d3.select(id).selectAll(".sankey-node").classed("dim", false);
-      d3.select(id).selectAll(".sankey-link").classed("dim", false);
-      d3.select(id).selectAll(".sankey-label").classed("dim", false);
-    })
-    .on("click", function (e, detail) {
-      const event = new CustomEvent('sankey_node_clicked', { detail });
-      window.dispatchEvent(event);
-    });
-  
-  const xpos = (d) => { return d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6; };
-
-  node.append("text")
-    .attr("class", "sankey-label")
-    .attr("text-anchor", function (d) { return d.x0 < width / 2 ? "start" : "end"})
-    .attr("x", xpos)
-    .attr("y", function (d) { return d.x0 < width / 2 ? d.y0 + ((d.y1 - d.y0) / 50) : d.y1 - ((d.y1 - d.y0) / 50); })
-    .on("mouseover", function (e, detail) {
-      const event = new CustomEvent('sankey_node_mouseover', { detail });
-      window.dispatchEvent(event);
-      let thisName = detail.name;
-      d3.select(id).selectAll(".sankey-link")
-        .classed("dim", function (l) {
-          return !(l.source.name == thisName || l.target.name == thisName);
-        })
-      d3.select(id).selectAll(".sankey-node")
-        .classed("dim", function (l) {
-          return !(l.name == thisName || l.sourceLinks.map(l => l.target.name).includes(thisName) || l.targetLinks.map(l => l.source.name).includes(thisName));
-        })
-      d3.select(id).selectAll(".sankey-label")
-        .classed("dim", function (l) {
-          return !(l.name == thisName || l.sourceLinks.map(l => l.target.name).includes(thisName) || l.targetLinks.map(l => l.source.name).includes(thisName));
-        })
-  
-    })
-    .on("mouseout", function (e, detail) {
-      const event = new CustomEvent('sankey_node_mouseout', { detail });
-      window.dispatchEvent(event);
-      d3.select(id).selectAll(".sankey-node").classed("dim", false);
-      d3.select(id).selectAll(".sankey-link").classed("dim", false);
-      d3.select(id).selectAll(".sankey-label").classed("dim", false);
-    })
-    .on("click", function (e, detail) {
-      const event = new CustomEvent('sankey_node_clicked', { detail });
-      window.dispatchEvent(event);
-    })
-    .selectAll("tspan")
-    .data(function (d) { 
-      const x = xpos(d);
-      if (!d?.labels?.length) return [{label: d.name, x, pos: "0em", data: d}];
-      const y = d.x0 < width / 2 ? 1: (-1 * (d.labels.length -1));
-      return d.labels.map((s, i) => {return {label: s, x, pos: (i?1:y)+"em", data: d}})
-    })
+    node.append("text")
+      .attr("class", "sankey-label")
+      .attr("text-anchor", function (d) { return d.x0 < width / 2 ? "start" : "end"})
+      .attr("x", xpos)
+      .attr("y", function (d) { return d.x0 < width / 2 ? d.y0 + ((d.y1 - d.y0) / 50) : d.y1 - ((d.y1 - d.y0) / 50); })
+      .on("mouseover", function (e, detail) {
+        const event = new CustomEvent('sankey_node_mouseover', { detail });
+        window.dispatchEvent(event);
+        let thisName = detail.name;
+        d3.select(id).selectAll(".sankey-link")
+          .classed("dim", function (l) {
+            return !(l.source.name == thisName || l.target.name == thisName);
+          })
+        d3.select(id).selectAll(".sankey-node")
+          .classed("dim", function (l) {
+            return !(l.name == thisName || l.sourceLinks.map(l => l.target.name).includes(thisName) || l.targetLinks.map(l => l.source.name).includes(thisName));
+          })
+        d3.select(id).selectAll(".sankey-label")
+          .classed("dim", function (l) {
+            return !(l.name == thisName || l.sourceLinks.map(l => l.target.name).includes(thisName) || l.targetLinks.map(l => l.source.name).includes(thisName));
+          })
+    
+      })
+      .on("mouseout", function (e, detail) {
+        const event = new CustomEvent('sankey_node_mouseout', { detail });
+        window.dispatchEvent(event);
+        d3.select(id).selectAll(".sankey-node").classed("dim", false);
+        d3.select(id).selectAll(".sankey-link").classed("dim", false);
+        d3.select(id).selectAll(".sankey-label").classed("dim", false);
+      })
+      .on("click", function (e, detail) {
+        const event = new CustomEvent('sankey_node_clicked', { detail });
+        window.dispatchEvent(event);
+      })
+      .selectAll("tspan")
+      .data(function (d) { 
+        const x = xpos(d);
+        if (!d?.labels?.length) return [{label: d.name, x, pos: "0em", data: d}];
+        const y = d.x0 < width / 2 ? 1: (-1 * (d.labels.length -1));
+        return d.labels.map((s, i) => {return {label: s, x, pos: (i?1:y)+"em", data: d}})
+      })
       .enter()
       .append('tspan')
       .attr("x", d => d.x)
       .attr('dy', d => d.pos)
       .text(d => d.label);
-
   
-
-  if (autoColor) {
-    d3.select(id).selectAll(".sankey-node")
-      .style("fill", function (d) { return d.color ? d.color : autoColor ? colour(d.depth) : null; })
-      .style("stroke", function (d) { return d.borderColor ? d.borderColor : d.color ? d.color : autoColor ? colour(d.depth) : null; });
-  }
-  else {
-    d3.select(id).selectAll(".sankey-node")
-      .filter(function (d) { return Boolean(d.color)})
-      .style("fill", function (d) { return d.color });
-
-    d3.select(id).selectAll(".sankey-node")
-      .filter(function (d) { return Boolean(d.borderColor || d.color)})
-      .style("stroke", function (d) { return d.borderColor ? d.borderColor : d.color; });
-  }
-  
-  linkG.data(sankeyLinks)
-    .enter()
-    .append("g")
-    .attr("class", "sankey-link")
-    .on("click", function (e, detail) {
-      const event = new CustomEvent('sankey_link_clicked', { detail});
-      window.dispatchEvent(event);
-    })
-    .on("mouseover", function (e, detail) {
-      const event = new CustomEvent('sankey_link_mouseover', { detail });
-      window.dispatchEvent(event);
-      let thisIndex = detail.index;
-      let thisSource = detail.source.name;
-      let thisTarget = detail.target.name;
-      d3.select(id).selectAll(".sankey-link")
-        .classed("dim", function (l) {
-          return !(l.index == thisIndex);
-        })
+    if (autoColor) {
       d3.select(id).selectAll(".sankey-node")
-        .classed("dim", function (l) {
-          return !(l.name == thisSource || l.name == thisTarget);
-        })
-      d3.select(id).selectAll(".sankey-label")
-        .classed("dim", function (l) {
-          return !(l.name == thisSource || l.name == thisTarget);
-        })
-    }).on("mouseout", function (e, detail) {
-      const event = new CustomEvent('sankey_link_mouseout', { detail });
-      window.dispatchEvent(event);
-      d3.select(id).selectAll(".sankey-node").classed("dim", false);
-      d3.select(id).selectAll(".sankey-link").classed("dim", false);
-      d3.select(id).selectAll(".sankey-label").classed("dim", false);
-    });
-
-  d3.select(id).selectAll(".sankey-link")
-    .append("path")
-    .attr("class", "sankey-top-link")
-    .attr("d", curveSankeyForceLink)
-    .style("stroke-width", function (d) { return Math.max(1, d.width); })
-    .classed("highlight", function (d) { return d.highlight})
-    .filter(function (d) {return d.color})
-    .style("stroke", function (d) {return d.color});
-  
-    // Parse all circular links and look for the widest path (maxPath) to use as padding
-    let maxPath = 0;
-    sankeyData.links.filter(l => l.circular).forEach(l => {
-        maxPath < l.width && (maxPath = l.width);
-    });
-  
-    // Find the bounding box of the main svg group to set the viewbox to match
-    const vbox = document.getElementById(`${id}-main-svg-g`).getBBox();
-    svg.attr("viewBox", [vbox.x - maxPath, vbox.y - maxPath, vbox.width + maxPath * 2, vbox.height + maxPath * 2].join(' '));
+        .style("fill", function (d) { return d.color ? d.color : autoColor ? colour(d.depth) : null; })
+        .style("stroke", function (d) { return d.borderColor ? d.borderColor : d.color ? d.color : autoColor ? colour(d.depth) : null; });
+    }
+    else {
+      d3.select(id).selectAll(".sankey-node")
+        .filter(function (d) { return Boolean(d.color)})
+        .style("fill", function (d) { return d.color });
+      d3.select(id).selectAll(".sankey-node")
+        .filter(function (d) { return Boolean(d.borderColor || d.color)})
+        .style("stroke", function (d) { return d.borderColor ? d.borderColor : d.color; });
+    }
     
+    linkG.data(sankeyLinks)
+      .enter()
+      .append("g")
+      .attr("class", "sankey-link")
+      .on("click", function (e, detail) {
+        const event = new CustomEvent('sankey_link_clicked', { detail});
+        window.dispatchEvent(event);
+      })
+      .on("mouseover", function (e, detail) {
+        const event = new CustomEvent('sankey_link_mouseover', { detail });
+        window.dispatchEvent(event);
+        let thisIndex = detail.index;
+        let thisSource = detail.source.name;
+        let thisTarget = detail.target.name;
+        d3.select(id).selectAll(".sankey-link")
+          .classed("dim", function (l) {
+            return !(l.index == thisIndex);
+          })
+        d3.select(id).selectAll(".sankey-node")
+          .classed("dim", function (l) {
+            return !(l.name == thisSource || l.name == thisTarget);
+          })
+        d3.select(id).selectAll(".sankey-label")
+          .classed("dim", function (l) {
+            return !(l.name == thisSource || l.name == thisTarget);
+          })
+      }).on("mouseout", function (e, detail) {
+        const event = new CustomEvent('sankey_link_mouseout', { detail });
+        window.dispatchEvent(event);
+        d3.select(id).selectAll(".sankey-node").classed("dim", false);
+        d3.select(id).selectAll(".sankey-link").classed("dim", false);
+        d3.select(id).selectAll(".sankey-label").classed("dim", false);
+      });
+  
+    d3.select(id).selectAll(".sankey-link")
+      .append("path")
+      .attr("class", "sankey-top-link")
+      .attr("d", curveSankeyForceLink)
+      .style("stroke-width", function (d) { return Math.max(1, d.width); })
+      .classed("highlight", function (d) { return d.highlight})
+      .filter(function (d) {return d.color})
+      .style("stroke", function (d) {return d.color});
+    
+      // Parse all circular links and look for the widest path (maxPath) to use as padding
+      let maxPath = 0;
+      sankeyData.links.filter(l => l.circular).forEach(l => {
+          maxPath < l.width && (maxPath = l.width);
+      });
+    
+      // Find the bounding box of the main svg group to set the viewbox to match
+      const vbox = document.getElementById(`${id}-main-svg-g`).getBBox();
+      svg.attr("viewBox", [vbox.x - maxPath, vbox.y - maxPath, vbox.width + maxPath * 2, vbox.height + maxPath * 2].join(' '));
+
+  })
 
 }
 
