@@ -67,6 +67,7 @@ const convertFactoriesToGraph = () => {
                 material_id: x.name,
                 produced: x.production,
                 consumed: x.consumption * -1,
+                consumers: graph.value.links.filter(l => l.source === x.id)
             },
         };
     })];
