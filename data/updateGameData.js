@@ -156,6 +156,9 @@ const getDescriptions = (rawData) => {
         recipes[i].class += "Impure";
         recipes[i].name += ` (Impure)`;
         recipes[i].ingredients = [];
+        recipes[i].products = recipes[i].products.map(x => {
+          return {...x, quantity: x.quantity * (p === 'Recipe_CrudeOil_C' ? 2000 : 1)}
+        });
         recipes[i].produced = [PurityRecipes[p]];
       })
 
