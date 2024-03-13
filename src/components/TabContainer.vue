@@ -6,6 +6,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generator';
 
 import Textarea from 'primevue/textarea';
+import localforage from 'localforage';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
 import AutoComplete from 'primevue/autocomplete';
@@ -34,9 +35,12 @@ const showGlobalOverview = ref(false);
 const graph = ref({ nodes: [], links: [] });
 
 localForage.getItem('factoryData').then(data => {
-    factories.value = data || [];
-    factory.value = factories.value[0];
-    loading.value = false;
+    localForage.getItem('lastFactory').then((factoryId) => {
+        
+        factories.value = data || [];
+        factory.value = factories.value.find(f => f.id === factoryId) || factories.value[0];
+        loading.value = false;
+    })
 });
 
 const convertFactoriesToGraph = () => {

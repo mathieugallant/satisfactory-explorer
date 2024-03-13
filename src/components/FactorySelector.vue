@@ -2,6 +2,7 @@
 import Dropdown from 'primevue/dropdown';
 import Button from 'primevue/button';
 import { ref, watch, onMounted } from 'vue';
+import localforage from 'localforage';
 const props = defineProps(['callbacks', 'factories', 'modelValue']);
 const emits = defineEmits(['update:modelValue']);
 
@@ -13,6 +14,10 @@ watch(factory, () => {
         emits('update:modelValue', f);
     }
 });
+
+const saveLastFactory = (e) => {
+    localforage.setItem('lastFactory', e.value);
+}
 
 watch(() => props.modelValue, () => factory.value = props.modelValue?.id);
 </script>
@@ -28,7 +33,7 @@ watch(() => props.modelValue, () => factory.value = props.modelValue?.id);
                 <Button icon="pi pi-cloud-download" severity="warning"  @click="props.callbacks.pasteFactory" title="Import factory"/>
                 <Button v-if="factory" icon="pi pi-trash" severity="danger"  @click="props.callbacks.confirmDelete" title="Delete factory"/>
                 <Button v-if="factory" icon="pi pi-pencil" severity="success" @click="props.callbacks.editFactoryName" title="Edit factory" />
-                <Dropdown v-model="factory" :options="props.factories.map(x=>x.id)" filter placeholder="Select a factory" />        
+                <Dropdown v-model="factory" :options="props.factories.map(x=>x.id)" filter placeholder="Select a factory"  @change="saveLastFactory" />
                 <Button icon="pi pi-plus" @click="props.callbacks.createFactory" title="Create new factory"/>
             </div>
         </div>
@@ -43,7 +48,7 @@ watch(() => props.modelValue, () => factory.value = props.modelValue?.id);
             </div>
         </div>
         <div class="p-inputgroup w-full">
-            <Dropdown v-model="factory" :options="props.factories.map(x=>x.id)" filter placeholder="Select a factory" />        
+            <Dropdown v-model="factory" :options="props.factories.map(x=>x.id)" filter placeholder="Select a factory" @change="saveLastFactory" />        
             <Button icon="pi pi-plus" @click="props.callbacks.createFactory" title="Create new factory"/>
         </div>
     </div>

@@ -21,6 +21,7 @@ import {
     getUom,
     getAutobuildNames,
     computeConsumption,
+    maxEffectiveOc,
 } from "../utilitites";
 const confirm = useConfirm();
 
@@ -278,13 +279,6 @@ const scrollToOutput = (candidates, startingCandidate = null) => {
             }, 1500);
         }
     }
-}
-
-const maxEffectiveOc = (rClass) => {
-    if (rClass.endsWith('PureMk3')) {
-        return 1.625;
-    }
-    return 2.5
 }
 
 const selectableRecipies = computed(() => {

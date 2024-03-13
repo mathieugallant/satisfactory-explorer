@@ -88,6 +88,13 @@ export const computeConsumption = (data) => {
     return (minConsumption ? minConsumption + '-': '') + maxConsumption + (minConsumption ? ' (avg. ' + avgConsumption + ')': '');
 };
 
+export const maxEffectiveOc = (rClass) => {
+    if (rClass.endsWith('PureMk3')) {
+        return 1.625;
+    }
+    return 2.5
+}
+
 export const getAllNetDefecits = (factoryConfig) => {
     const res = [];
     getFactoryClasses(factoryConfig).forEach(p => {
