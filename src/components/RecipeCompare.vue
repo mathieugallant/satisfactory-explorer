@@ -21,12 +21,14 @@ import ConsumptionTag from './ConsumptionTag.vue';
 const selectedMat = ref(null);
 const allProducts = ref([]);
 const recipes = ref({});
+const usedIn = ref([]);
 
 const props = defineProps(['mainData']);
 
 const saveLastMaterial = () => {
     localforage.setItem('lastMaterial', JSON.parse(JSON.stringify(selectedMat.value)));
     updateRecipes();
+    usedInList();
 };
 
 const setTargetOverclock = (max = false) => {
@@ -98,7 +100,7 @@ const hasAutobuild = () => {
 };
 
 const usedInList = () => {
-    return props.mainData.recipes.filter(r => {
+    usedIn.value = props.mainData.recipes.filter(r => {
         const product = r.products[0];
         if (props.mainData.descs[product?.class]?.name) {
             return r.ingredients.map(i=>i.class).includes(selectedMat.value.id)
@@ -218,9 +220,10 @@ const selectMaterial = (dClass) => {
             </Panel>
             <Panel v-if="Object.values(recipes).length" header="Used to make :">
                 <div class="flex flex-row flex-wrap align-items-center gap-2 mt-1">
-                    <div v-for="p of usedInList()" class="px-1 bg-ficsit-primary text-white border-1 border-400 text-sm border-round cursor-pointer" @click="selectMaterial(p.products[0]?.class)">
+                    <div v-for="p of usedIn" class="px-1 bg-ficsit-primary text-white border-1 border-400 text-sm border-round cursor-pointer" @click="selectMaterial(p.products[0]?.class)">
                         {{ p.name }}
                     </div>
+                    <div v-if="!usedIn.length">Nothing...</div>
                 </div>
             </Panel>
         </div>
