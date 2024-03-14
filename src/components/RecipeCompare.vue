@@ -191,7 +191,7 @@ const selectMaterial = (dClass) => {
                                         </div>
                                         <div v-for="p of getData(recipe.class).products"
                                             class="flex flex-row align-items-center-center mt-1">
-                                            <div class="px-1 bg-ficsit-primary text-white border-1 border-400 text-sm border-round-left">
+                                            <div class="px-1 bg-ficsit-primary text-white border-1 border-400 text-sm border-round-left cursor-pointer" @click="selectMaterial(p.class)">
                                                 {{ props.mainData.descs[p.class].name || getData(recipe.class).name
                                                 }}
                                             </div>
