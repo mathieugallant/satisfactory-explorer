@@ -27,13 +27,12 @@ const props = defineProps(['mainData']);
 const saveLastMaterial = () => {
     localforage.setItem('lastMaterial', JSON.parse(JSON.stringify(selectedMat.value)));
     updateRecipes();
-}
-
+};
 
 const setTargetOverclock = (max = false) => {
     selectedMat.value.maxOverclock = max;
     saveLastMaterial();
-}
+};
 
 const setPpm = (rClass) => {
     const targetOverclock = selectedMat.value.maxOverclock ? maxEffectiveOc(rClass) : 1;
@@ -92,12 +91,29 @@ const updateRecipes = () => {
         }
     })
     Object.keys(recipes.value).forEach(r => setPpm(r));
-}
+};
 
 const hasAutobuild = () => {
     return !!Object.values(recipes.value).find(r => getAutobuildNames(getData(r.class)?.produced));
-}
+};
 
+const usedInList = () => {
+    return props.mainData.recipes.filter(r => {
+        const product = r.products[0];
+        if (props.mainData.descs[product?.class]?.name) {
+            return r.ingredients.map(i=>i.class).includes(selectedMat.value.id)
+        }
+    });
+};
+
+const selectMaterial = (dClass) => {
+    console.log(dClass)
+    const mat = allProducts.value.find(m => m.id === dClass);
+    if (mat) {
+        selectedMat.value = mat;
+        saveLastMaterial();
+    }
+};
 </script>
 
 <template>
@@ -117,7 +133,7 @@ const hasAutobuild = () => {
                 <p v-if="props.mainData.descs[selectedMat.id].resourceSinkPoints">Resource Sink Points : {{
                         props.mainData.descs[selectedMat.id].resourceSinkPoints }}</p>
             </div>
-            <Panel v-if="Object.values(recipes).length" header="Recipes">
+            <Panel class="mb-4" v-if="Object.values(recipes).length" header="Recipes">
                 <div v-if="hasAutobuild()" class="p-inputgroup w-20rem">
                     <InputNumber v-model="selectedMat.targetPpm" mode="decimal" :min="0" :minFractionDigits="0" :maxFractionDigits="5" :step="0.1" suffix=" / minute" placeholder="Target Rate" @update:modelValue="saveLastMaterial" />
                     <span title="Balance for maximum overclock"
@@ -156,7 +172,7 @@ const hasAutobuild = () => {
                                         </div>
                                         <div v-for="p of getData(recipe.class).ingredients"
                                             class="flex flex-row align-items-center-center mt-1">
-                                            <div class="px-1 bg-ficsit-secondary text-white border-1 border-400 text-sm border-round-left">
+                                            <div class="px-1 bg-ficsit-secondary text-white border-1 border-400 text-sm border-round-left cursor-pointer" @click="selectMaterial(p.class)">
                                                 {{ getName(p.class) }}
                                             </div>
                                             <div class="px-1 border-1 border-400 text-sm border-round-right">
@@ -175,8 +191,7 @@ const hasAutobuild = () => {
                                         </div>
                                         <div v-for="p of getData(recipe.class).products"
                                             class="flex flex-row align-items-center-center mt-1">
-                                            <div class="px-1 bg-ficsit-primary text-white border-1 border-400 text-sm border-round-left"
-                                                @click="checkScrollToOutput(p.class, recipe.class)">
+                                            <div class="px-1 bg-ficsit-primary text-white border-1 border-400 text-sm border-round-left">
                                                 {{ props.mainData.descs[p.class].name || getData(recipe.class).name
                                                 }}
                                             </div>
@@ -198,6 +213,13 @@ const hasAutobuild = () => {
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </Panel>
+            <Panel v-if="Object.values(recipes).length" header="Used to make :">
+                <div class="flex flex-row flex-wrap align-items-center gap-2 mt-1">
+                    <div v-for="p of usedInList()" class="px-1 bg-ficsit-primary text-white border-1 border-400 text-sm border-round cursor-pointer" @click="selectMaterial(p.products[0]?.class)">
+                        {{ p.name }}
                     </div>
                 </div>
             </Panel>
