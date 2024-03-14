@@ -71,7 +71,7 @@ onMounted(() => {
     });
     localforage.getItem('lastMaterial').then(mat => {
         allProducts.value = [...matSet].map(id => {
-            if (id === mat.id) {
+            if (mat && id === mat.id) {
                 selectedMat.value = mat;
                 return mat
             }
@@ -83,7 +83,7 @@ onMounted(() => {
 
 const updateRecipes = () => {
     recipes.value = {};
-    props.mainData.recipes.filter(r => r.products.map(x => x.class).includes(selectedMat.value.id)).forEach(r => {
+    props.mainData.recipes.filter(r => r.products.map(x => x.class).includes(selectedMat.value?.id)).forEach(r => {
         recipes.value[r.class] = {
             class: r.class,
             overclock: 1,
