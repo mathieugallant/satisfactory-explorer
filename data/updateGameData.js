@@ -17,9 +17,16 @@ const getDescriptions = (rawData) => {
         "bigIcon": mPersistentBigIcon,
         "resourceSinkPoints": mResourceSinkPoints
     }`;
+    
     return jsonata(jsonexp).evaluate(rawData).then(pDesc => {
       const pData = {};
       [...pDesc].forEach(x => pData[x.class] = x);
+      Object.keys(pData).forEach(x => {
+        if (!pData[x].name) {
+          pData[x].name = pData[x.replace('Desc_', 'Build_')]?.name;
+          pData[x].description = pData[x.replace('Desc_', 'Build_')]?.description;
+        }
+      })
       return pData;
     });
   }
