@@ -124,122 +124,120 @@ const selectMaterial = (dClass) => {
 </script>
 
 <template>
-    <div class="flex flex-column md:h-screen md:mt-5 md:absolute md:top-0 w-full">
-        <div class="w-full z-4">
-            <div class="flex justify-content-end bg-ficsit-secondary p-2">
-                <div class="p-inputgroup w-full md:w-8 lg:w-6 xl:w-4">
-                    <Dropdown v-model="selectedMat" :options="allProducts" optionLabel="name" filter
-                        placeholder="Select a material" @change="saveLastMaterial">
-                        <template #option="slotProps">
-                            <div>
-                                <div>{{ slotProps.option.name }}</div>
-                                <div class="text-sm text-400">{{ slotProps.option.id }}</div>
+    <div class="w-full z-4 flex justify-content-end bg-ficsit-secondary p-2" style="height: 60px;">
+        <div class="max-w-full p-inputgroup w-full md:w-8 lg:w-6 xl:w-4">
+            <Dropdown v-model="selectedMat" :options="allProducts" optionLabel="name" filter
+                placeholder="Select a material" @change="saveLastMaterial">
+                <template #option="slotProps">
+                    <div>
+                        <div>{{ slotProps.option.name }}</div>
+                        <div class="text-sm text-400">{{ slotProps.option.id }}</div>
+                    </div>
+                </template>
+            </Dropdown>
+        </div>
+    </div>
+    <div class="w-full md:overflow-y-scroll" style="height: calc(100vh - 92px);">
+        <div v-if="selectedMat" class="w-full flex flex-column gap-3 p-2">
+            <div class="w-full">
+                <h1 class="mb-0">{{ props.mainData.descs[selectedMat.id].name }}</h1>
+                <span class="text-400">{{ selectedMat.id }}</span>
+                <p>{{ props.mainData.descs[selectedMat.id].description }}</p>
+                <p v-if="props.mainData.descs[selectedMat.id].resourceSinkPoints">Resource Sink Points : {{
+                        props.mainData.descs[selectedMat.id].resourceSinkPoints }}</p>
+            </div>
+            <div v-if="Object.values(recipes).length" class="surface-card surface-border border-1 border-round-md p-3">
+                <h3 class="mt-2">Recipes</h3>
+                <div v-if="hasAutobuild()" class="p-inputgroup w-20rem">
+                    <InputNumber v-model="selectedMat.targetPpm" mode="decimal" :min="0" :minFractionDigits="0" :maxFractionDigits="5" :step="0.1" suffix=" / minute" placeholder="Target Rate" @update:modelValue="saveLastMaterial" />
+                    <span title="Balance for maximum overclock"
+                        class="p-inputgroup-addon cursor-pointer"
+                        @click="setTargetOverclock(true)">
+                        🚀
+                    </span>
+                    <span title="Balance without overclock"
+                        class="p-inputgroup-addon cursor-pointer"
+                        @click="setTargetOverclock(false)">
+                        ⚖️
+                    </span>
+                </div>
+                <div v-else>Manual build only material</div>
+                <div class="w-full flex flex-row flex-wrap">
+                    <div v-for="recipe of recipes" :id="recipe.class" class="col-12 lg:col-6 xl:col-4 mt-2 p-1">
+                        <div class="col-12 p-2 shadow-2 surface-50 flex flex-column h-full">
+                            <div class="col-12 flex justify-content-between">
+                                <div class="flex flex-row align-items-center flex-grow-1">
+                                    <div class="flex flex-column">
+                                        <h3 class="m-0">
+                                            {{ getData(recipe.class).name }}
+                                        </h3>
+                                        <div v-if="getAutobuildNames(getData(recipe.class)?.produced)" class="flex flex-row align-items-baseline gap-2">
+                                            <ConsumptionTag :consumption="computeConsumption(recipe)" />
+                                            {{recipe.numMachines}} x {{ getAutobuildNames(getData(recipe.class)?.produced, recipe.numMachines) }} @ {{ Math.round(recipe.overclock * 1000000) / 10000 }}%
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </template>
-                    </Dropdown>
+                            <div class="col-12 material-list flex-grow-1">
+                                <div class="mats">
+                                    <div class="flex flex-column border-300 mats-in w-full">
+                                        <div>Inputs</div>
+                                        <div v-if="!getData(recipe.class).ingredients?.length" class="text-sm mt-1">None
+                                        </div>
+                                        <div v-for="p of getData(recipe.class).ingredients"
+                                            class="flex flex-row align-items-center-center mt-1">
+                                            <div class="px-1 bg-ficsit-secondary text-white border-1 border-400 text-sm border-round-left cursor-pointer" @click="selectMaterial(p.class)">
+                                                {{ getName(p.class) }}
+                                            </div>
+                                            <div class="px-1 border-1 border-400 text-sm border-round-right">
+                                                <span>
+                                                    {{ roundNumber(computePpm(p.quantity, p.class, recipe)) }}
+                                                </span>
+                                                <span class="text-xxs">
+                                                    {{ getUom(p.class, recipe) }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="w-full">
+                                        <div>Outputs</div>
+                                        <div v-if="!getData(recipe.class).products?.length" class="text-sm mt-1">None
+                                        </div>
+                                        <div v-for="p of getData(recipe.class).products"
+                                            class="flex flex-row align-items-center-center mt-1">
+                                            <div class="px-1 bg-ficsit-primary text-white border-1 border-400 text-sm border-round-left cursor-pointer" @click="selectMaterial(p.class)">
+                                                {{ props.mainData.descs[p.class].name || getData(recipe.class).name
+                                                }}
+                                            </div>
+                                            <div class="px-1 border-1 border-400 text-sm border-round-right">
+                                                <span>
+                                                    {{ roundNumber(computePpm(p.quantity, p.class, recipe)) }}
+                                                </span>
+                                                <span class="text-xxs">
+                                                    {{ getUom(p.class, recipe) }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div v-if="getData(recipe.class).message" class="col-12">
+                                <div class="w-full border-round border-2 border-yellow-900 p-2 text-sm">
+                                    👉 {{ getData(recipe.class).message }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div v-if="selectedMat" class="md:absolute md:top-0 md:pt-7 w-full z-3 md:h-screen">
-            <div class="h-full overflow-y-auto p-2 pb-7">
-                <div class="w-full mb-4 p-2">
-                    <h1 class="mb-0">{{ props.mainData.descs[selectedMat.id].name }}</h1>
-                    <span class="text-400">{{ selectedMat.id }}</span>
-                    <p>{{ props.mainData.descs[selectedMat.id].description }}</p>
-                    <p v-if="props.mainData.descs[selectedMat.id].resourceSinkPoints">Resource Sink Points : {{
-                            props.mainData.descs[selectedMat.id].resourceSinkPoints }}</p>
+            <div v-if="Object.values(recipes).length" class="surface-card surface-border border-1 border-round-md p-3">
+                <h3 class="mt-2">Used to make :</h3>
+                <div class="flex flex-row flex-wrap align-items-center gap-2 mt-1">
+                    <div v-for="p of usedIn" class="px-1 bg-green-700 text-white border-1 border-400 text-sm border-round cursor-pointer" @click="selectMaterial(p.products[0]?.class)">
+                        {{ p.name }}
+                    </div>
+                    <div v-if="!usedIn.length">Nothing...</div>
                 </div>
-                <Panel class="mb-4" v-if="Object.values(recipes).length" header="Recipes">
-                    <div v-if="hasAutobuild()" class="p-inputgroup w-20rem">
-                        <InputNumber v-model="selectedMat.targetPpm" mode="decimal" :min="0" :minFractionDigits="0" :maxFractionDigits="5" :step="0.1" suffix=" / minute" placeholder="Target Rate" @update:modelValue="saveLastMaterial" />
-                        <span title="Balance for maximum overclock"
-                            class="p-inputgroup-addon cursor-pointer"
-                            @click="setTargetOverclock(true)">
-                            🚀
-                        </span>
-                        <span title="Balance without overclock"
-                            class="p-inputgroup-addon cursor-pointer"
-                            @click="setTargetOverclock(false)">
-                            ⚖️
-                        </span>
-                    </div>
-                    <div v-else>Manual build only material</div>
-                    <div class="w-full flex flex-row flex-wrap">
-                        <div v-for="recipe of recipes" :id="recipe.class" class="col-12 lg:col-6 xl:col-4 mt-2 p-1">
-                            <div class="col-12 p-2 shadow-2 surface-50 flex flex-column h-full">
-                                <div class="col-12 flex justify-content-between">
-                                    <div class="flex flex-row align-items-center flex-grow-1">
-                                        <div class="flex flex-column">
-                                            <h3 class="m-0">
-                                                {{ getData(recipe.class).name }}
-                                            </h3>
-                                            <div v-if="getAutobuildNames(getData(recipe.class)?.produced)" class="flex flex-row align-items-baseline gap-2">
-                                                <ConsumptionTag :consumption="computeConsumption(recipe)" />
-                                                {{recipe.numMachines}} x {{ getAutobuildNames(getData(recipe.class)?.produced, recipe.numMachines) }} @ {{ Math.round(recipe.overclock * 1000000) / 10000 }}%
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-12 material-list flex-grow-1">
-                                    <div class="mats">
-                                        <div class="flex flex-column border-300 mats-in w-full">
-                                            <div>Inputs</div>
-                                            <div v-if="!getData(recipe.class).ingredients?.length" class="text-sm mt-1">None
-                                            </div>
-                                            <div v-for="p of getData(recipe.class).ingredients"
-                                                class="flex flex-row align-items-center-center mt-1">
-                                                <div class="px-1 bg-ficsit-secondary text-white border-1 border-400 text-sm border-round-left cursor-pointer" @click="selectMaterial(p.class)">
-                                                    {{ getName(p.class) }}
-                                                </div>
-                                                <div class="px-1 border-1 border-400 text-sm border-round-right">
-                                                    <span>
-                                                        {{ roundNumber(computePpm(p.quantity, p.class, recipe)) }}
-                                                    </span>
-                                                    <span class="text-xxs">
-                                                        {{ getUom(p.class, recipe) }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="w-full">
-                                            <div>Outputs</div>
-                                            <div v-if="!getData(recipe.class).products?.length" class="text-sm mt-1">None
-                                            </div>
-                                            <div v-for="p of getData(recipe.class).products"
-                                                class="flex flex-row align-items-center-center mt-1">
-                                                <div class="px-1 bg-ficsit-primary text-white border-1 border-400 text-sm border-round-left cursor-pointer" @click="selectMaterial(p.class)">
-                                                    {{ props.mainData.descs[p.class].name || getData(recipe.class).name
-                                                    }}
-                                                </div>
-                                                <div class="px-1 border-1 border-400 text-sm border-round-right">
-                                                    <span>
-                                                        {{ roundNumber(computePpm(p.quantity, p.class, recipe)) }}
-                                                    </span>
-                                                    <span class="text-xxs">
-                                                        {{ getUom(p.class, recipe) }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div v-if="getData(recipe.class).message" class="col-12">
-                                    <div class="w-full border-round border-2 border-yellow-900 p-2 text-sm">
-                                        👉 {{ getData(recipe.class).message }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </Panel>
-                <Panel v-if="Object.values(recipes).length" header="Used to make :">
-                    <div class="flex flex-row flex-wrap align-items-center gap-2 mt-1">
-                        <div v-for="p of usedIn" class="px-1 bg-green-700 text-white border-1 border-400 text-sm border-round cursor-pointer" @click="selectMaterial(p.products[0]?.class)">
-                            {{ p.name }}
-                        </div>
-                        <div v-if="!usedIn.length">Nothing...</div>
-                    </div>
-                </Panel>
             </div>
         </div>
     </div>

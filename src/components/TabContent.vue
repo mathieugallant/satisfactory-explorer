@@ -318,12 +318,12 @@ watch(() => props.modelValue, () => {
             <Button label="Set!" :disabled="!Number(targetPpm.ppm)" @click="setPpm()" />
         </div>
     </Dialog>
-    <div class="md:absolute md:top-0 md:left-0 md:pt-7 md:max-h-screen flex flex-column p-2 w-full">
-        <div class="w-full grid mb-2 p-1 pt-2">
+    <div class="w-full">
+        <div class="w-full p-3 pb-0 md:sticky surface-0 z-5 md:sticky" style="top: 92px;">
             <FactoryIOs :recipes="recipes" @check-add-recipe="checkAddRecipe" />
         </div>
-        <div class="border-x-1 border-1 border-100 flex-grow-1 md:overflow-y-auto md:mb-5">
-            <DataView :value="Object.values(recipes).sort((a, b) => a?.index - b?.index)" :layout="layout">
+        <div class="p-2">
+            <DataView class="border-x-1 border-1 border-100 surface-card" :value="Object.values(recipes).sort((a, b) => a?.index - b?.index)" :layout="layout">
                 <template #header>
                     <div class="flex flex-column md:flex-row md:justify-content-between">
                         <div class="flex flex-row align-items-center gap-2">

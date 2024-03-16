@@ -51,7 +51,8 @@ const checkResetFD = () => {
   <Dialog v-model:visible="showHelp" modal header="Help" class="w-11 lg:w-9">
     <Help @checkResetFD="checkResetFD()" />
   </Dialog>
-    <div class="md:fixed z-5 top-0 h-2rem w-full bg-primary flex align-items-center justify-content-between">
+  <div class="w-full">
+    <div class="z-5 w-full bg-primary flex align-items-center justify-content-between md:sticky top-0" style="height: 32px;">
       <div class="flex align-items-center">
         <img src="./assets/satisfactory_logo.png" class="h-2rem mx-2" />
         <div 
@@ -74,12 +75,13 @@ const checkResetFD = () => {
         </a>
       </div>
     </div>
-    <div v-if="mode==='planner'" class="md:fixed md:top-0 md:pt-5 md:h-screen w-full">
+    <div v-if="mode==='planner'" class="w-full">
       <TabContainer v-if="initialized" :mainData="mainData" />
     </div>
-    <div v-if="mode==='explorer'" class="md:fixed md:top-0 md:pt-5 md:h-screen w-full">
+    <div v-if="mode==='explorer'" class="w-full">
       <RecipeCompare v-if="initialized" :mainData="mainData" />
     </div>
+  </div>
   <ConfirmDialog />
   <Toast />
 </template>
@@ -96,6 +98,10 @@ body {
 }
 .bg-ficsit-secondary {
   background-color: #5F668C;
+}
+
+.p-dropdown-panel {
+  max-width: 100vw;
 }
 
 .flex-center {

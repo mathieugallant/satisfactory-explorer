@@ -23,7 +23,7 @@ watch(() => props.modelValue, () => factory.value = props.modelValue?.id);
 </script>
 
 <template>
-    <div class="md:block hidden w-full z-4">
+    <div class="md:block hidden w-full z-4 md:sticky" style="top: 32px;">
         <div class="flex justify-content-between bg-ficsit-secondary p-2">        
             <div class="p-inputgroup">
                 <Button v-if="factory" icon="pi pi-globe" severity="secondary" @click="props.callbacks.showOverview" title="Global View"/>
