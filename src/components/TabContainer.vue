@@ -284,14 +284,14 @@ onUnmounted(() => {
         </div>
     </Dialog>
 
-    <div class="flex flex-column w-full">
-        <FactorySelector class="md:sticky"
+    <div class="w-full md:sticky z-4 top-0"  style="height: 60px;">
+        <FactorySelector
             :callbacks="{ showOverview, factoryToClipboard, pasteFactory, confirmDelete, editFactoryName, createFactory }"
             :factories="factories" v-model="factory" />
-        <div v-if="factory" class="w-full z-3" style="height: calc(100vh - 92px);">
-            <TabContent :mainData="props.mainData" :modelValue="factory" :factories="factories" :recipeNav="recipeNav"
-                @update:modelValue="(data) => saveChanges(factory, data)" />
-        </div>
+    </div>
+    <div v-if="factory" class="w-full z-3 md:overflow-y-scroll" style="height: calc(100vh - 92px);">
+        <TabContent :mainData="props.mainData" :modelValue="factory" :factories="factories" :recipeNav="recipeNav"
+            @update:modelValue="(data) => saveChanges(factory, data)" />
     </div>
 </template>
 

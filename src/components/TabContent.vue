@@ -323,150 +323,148 @@ watch(() => props.modelValue, () => {
             <Button label="Set!" :disabled="!Number(targetPpm.ppm)" @click="setPpm()" />
         </div>
     </Dialog>
-    <div class="w-full">
-        <div class="w-full p-3 pb-0 md:sticky surface-0 z-5 md:sticky" style="top: 92px;">
-            <FactoryIOs :recipes="recipes" @check-add-recipe="checkAddRecipe" />
-        </div>
-        <div class="p-2">
-            <DataView class="border-x-1 border-1 border-100 surface-card" :value="Object.values(recipes).sort((a, b) => a?.index - b?.index)" :layout="layout">
-                <template #header>
-                    <div class="flex flex-column md:flex-row md:justify-content-between">
-                        <div class="flex flex-row align-items-center gap-2">
-                            <h3 class="m-1 cursor-pointer" @click="sortListAlpha()" title="Click to sort">Production Setup
-                                <i class="pi pi-sort-alpha-down" /></h3>
-                            <ConsumptionTag :consumption="getFactoryConsumption()" prefix="Factory"/>
-                        </div>
-                        <div class="p-inputgroup w-20rem">
-                            <Dropdown v-model="selectedRecipe" :options="selectableRecipies" filter optionLabel="name"
-                                placeholder="Select a Recipe" class="w-full md:w-14rem">
-                            </Dropdown>
-                            <Button icon="pi pi-plus" class="bg-bluegray-600 hover:bg-bluegray-400 border-bluegray-700"
-                                @click="addRecipe()" />
-                        </div>
+    <div class="w-full p-3 pb-0 md:sticky surface-0 z-5 md:sticky border-bottom-1 border-100 top-0">
+        <FactoryIOs :recipes="recipes" @check-add-recipe="checkAddRecipe" />
+    </div>
+    <div class="p-2 w-full">
+        <DataView class="border-x-1 border-1 border-100 surface-card" :value="Object.values(recipes).sort((a, b) => a?.index - b?.index)" :layout="layout">
+            <template #header>
+                <div class="flex flex-column md:flex-row md:justify-content-between">
+                    <div class="flex flex-row align-items-center gap-2">
+                        <h3 class="m-1 cursor-pointer" @click="sortListAlpha()" title="Click to sort">Production Setup
+                            <i class="pi pi-sort-alpha-down" /></h3>
+                        <ConsumptionTag :consumption="getFactoryConsumption()" prefix="Factory"/>
                     </div>
-                </template>
-                <template #grid="slotProps">
-                    <div :id="slotProps.data.class" draggable="true"
-                        :class="'col-12 lg:col-6 xl:col-4 mt-2 p-1 recipe-card ' + (dragHover === slotProps.index && dragging !== slotProps.index ? 'hover-effect' : '')"
-                        @drop="e => moveToPosition(e, slotProps.index)" @dragstart="startDrag(slotProps.index)"
-                        @dragover="e => showDragHoverEffect(e, slotProps.index)" @dragend="() => { dragHover = null }">
-                        <div class="col-12 p-2 shadow-2 surface-50 flex flex-column h-full">
-                            <div class="col-12 flex justify-content-between">
-                                <div class="flex flex-row align-items-center flex-grow-1">
-                                    <div class="flex flex-column">
-                                        <h3 class="m-0">
-                                            {{ getData(slotProps.data.class).name }}
-                                        </h3>
-                                        <span class="text-sm text-400">{{ slotProps.data.class }}</span>
-                                        <ConsumptionTag :consumption="computeConsumption(slotProps.data)" />
-                                    </div>
-                                </div>
-                                <div>
-                                    <Button icon="pi pi-times" severity="danger"
-                                        @click="confirmRemoveRecipe(slotProps.data.class)" size="small"
-                                        class="w-2rem h-2rem" />
+                    <div class="p-inputgroup w-20rem">
+                        <Dropdown v-model="selectedRecipe" :options="selectableRecipies" filter optionLabel="name"
+                            placeholder="Select a Recipe" class="w-full md:w-14rem">
+                        </Dropdown>
+                        <Button icon="pi pi-plus" class="bg-bluegray-600 hover:bg-bluegray-400 border-bluegray-700"
+                            @click="addRecipe()" />
+                    </div>
+                </div>
+            </template>
+            <template #grid="slotProps">
+                <div :id="slotProps.data.class" draggable="true"
+                    :class="'col-12 lg:col-6 xl:col-4 mt-2 p-1 recipe-card ' + (dragHover === slotProps.index && dragging !== slotProps.index ? 'hover-effect' : '')"
+                    @drop="e => moveToPosition(e, slotProps.index)" @dragstart="startDrag(slotProps.index)"
+                    @dragover="e => showDragHoverEffect(e, slotProps.index)" @dragend="() => { dragHover = null }">
+                    <div class="col-12 p-2 shadow-2 surface-50 flex flex-column h-full">
+                        <div class="col-12 flex justify-content-between">
+                            <div class="flex flex-row align-items-center flex-grow-1">
+                                <div class="flex flex-column">
+                                    <h3 class="m-0">
+                                        {{ getData(slotProps.data.class).name }}
+                                    </h3>
+                                    <span class="text-sm text-400">{{ slotProps.data.class }}</span>
+                                    <ConsumptionTag :consumption="computeConsumption(slotProps.data)" />
                                 </div>
                             </div>
-                            <div class="col-12 material-list flex-grow-1">
-                                <div class="mats">
-                                    <div class="flex flex-column border-300 mats-in w-full">
-                                        <div>Inputs</div>
-                                        <div v-if="!getData(slotProps.data.class).ingredients?.length" class="text-sm mt-1">None</div>
-                                        <div v-for="p of getData(slotProps.data.class).ingredients"
-                                            class="flex flex-row align-items-center-center mt-1">
-                                            <div class="px-1 bg-ficsit-secondary text-white border-1 border-400 text-sm cursor-pointer border-round-left"
-                                                @click="checkAddRecipe(p.class)">
-                                                {{ getName(p.class) }}
-                                            </div>
-                                            <div class="border-y-1 border-400 text-sm cursor-pointer"
-                                                @click="matchInput(p.class, slotProps.data, )">
-                                                <SupplyDisplay :supply="roundNumber(computeSupply(p.class, recipes))" />
-                                            </div>
-                                            <div class="px-1 border-1 border-400 text-sm cursor-pointer  border-round-right"
-                                                @click="startSetPpm(slotProps.data.class, p.class)">
-                                                <span>
-                                                    {{ roundNumber(computePpm(p.quantity, p.class, slotProps.data)) }}
-                                                </span>
-                                                <span class="text-xxs">
-                                                    {{ getUom(p.class, slotProps.data) }}
-                                                </span>
-                                            </div>
+                            <div>
+                                <Button icon="pi pi-times" severity="danger"
+                                    @click="confirmRemoveRecipe(slotProps.data.class)" size="small"
+                                    class="w-2rem h-2rem" />
+                            </div>
+                        </div>
+                        <div class="col-12 material-list flex-grow-1">
+                            <div class="mats">
+                                <div class="flex flex-column border-300 mats-in w-full">
+                                    <div>Inputs</div>
+                                    <div v-if="!getData(slotProps.data.class).ingredients?.length" class="text-sm mt-1">None</div>
+                                    <div v-for="p of getData(slotProps.data.class).ingredients"
+                                        class="flex flex-row align-items-center-center mt-1">
+                                        <div class="px-1 bg-ficsit-secondary text-white border-1 border-400 text-sm cursor-pointer border-round-left"
+                                            @click="checkAddRecipe(p.class)">
+                                            {{ getName(p.class) }}
                                         </div>
-                                    </div>
-                                    <div class="w-full">
-                                        <div>Outputs</div>
-                                        <div v-if="!getData(slotProps.data.class).products?.length" class="text-sm mt-1">None</div>
-                                        <div v-for="p of getData(slotProps.data.class).products"
-                                            class="flex flex-row align-items-center-center mt-1">
-                                            <div class="px-1 bg-ficsit-primary text-white border-1 border-400 text-sm  border-round-left"
-                                                @click="checkScrollToOutput(p.class, slotProps.data.class)">
-                                                {{ props.mainData.descs[p.class].name || getData(slotProps.data.class).name
-                                                }}
-                                            </div>
-                                            <div class="border-y-1 border-right-1 border-400 text-sm cursor-pointer"
-                                                @click="fulfillGlobalDemand(p.class, slotProps.data)">
-                                                <SupplyDisplay :supply="getGlobalProductDefecit(p.class, props.factories).value" />
-                                            </div>
-                                            <div class="border-y-1 border-400 text-sm cursor-pointer"
-                                                @click="matchOutput(p.class, slotProps.data)">
-                                                <SupplyDisplay :supply="roundNumber(computeSupply(p.class, recipes))" />
-                                            </div>
-                                            <div class="px-1 border-1 border-400 text-sm cursor-pointer border-round-right"
-                                                @click="startSetPpm(slotProps.data.class, p.class)">
-                                                <span>
-                                                    {{ roundNumber(computePpm(p.quantity, p.class, slotProps.data)) }}
-                                                </span>
-                                                <span class="text-xxs">
-                                                    {{ getUom(p.class, slotProps.data) }}
-                                                </span>
-                                            </div>
+                                        <div class="border-y-1 border-400 text-sm cursor-pointer"
+                                            @click="matchInput(p.class, slotProps.data, )">
+                                            <SupplyDisplay :supply="roundNumber(computeSupply(p.class, recipes))" />
+                                        </div>
+                                        <div class="px-1 border-1 border-400 text-sm cursor-pointer  border-round-right"
+                                            @click="startSetPpm(slotProps.data.class, p.class)">
+                                            <span>
+                                                {{ roundNumber(computePpm(p.quantity, p.class, slotProps.data)) }}
+                                            </span>
+                                            <span class="text-xxs">
+                                                {{ getUom(p.class, slotProps.data) }}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div v-if="getData(slotProps.data.class).message" class="col-12">
-                                <div  class="w-full border-round border-2 border-yellow-900 p-2 text-sm">
-                                    👉 {{ getData(slotProps.data.class).message }}
-                                </div>
-                            </div>
-                            <div v-if="getAutobuildNames(getData(slotProps.data.class)?.produced)" class="col-12">
                                 <div class="w-full">
-                                    <div class="p-inputgroup flex-1">
-                                        <span title="Balance for maximum overclock" class="p-inputgroup-addon cursor-pointer"
-                                            @click="startSetPpm(slotProps.data.class, getData(slotProps.data.class).products[0].class, false, maxEffectiveOc(slotProps.data.class))">
-                                            🚀
-                                        </span>
-                                        <InputText v-model.number="slotProps.data.overclock" class="w-full" />
-                                        <span title="Balance without overclock" class="p-inputgroup-addon cursor-pointer"
-                                            @click="startSetPpm(slotProps.data.class, getData(slotProps.data.class).products[0].class, false)">
-                                            ⚖️
-                                        </span>
-                                        <span title="Reset to 100% without balancing"
-                                            class="p-inputgroup-addon cursor-pointer"
-                                            @click="() => slotProps.data.overclock = 1">
-                                            <i class="pi pi-refresh" />
-                                        </span>
-                                    </div>
-                                    <Slider v-model="slotProps.data.overclock" class="w-full" :max="maxEffectiveOc(slotProps.data.class)" :step="0.05"
-                                        style="margin-top: -1px;" />
-                                </div>
-                                <div class="w-full mt-3">
-                                    <div class="p-inputgroup flex-1">
-                                        <Button icon="pi pi-minus"
-                                            @mousedown="() => startHoldAdjust(slotProps.data.class, -1)" />
-                                        <InputNumber v-model="slotProps.data.numMachines" inputId="minmax-buttons"
-                                            mode="decimal" :min="1"
-                                            :suffix="'x ' + getAutobuildNames(getData(slotProps.data.class)?.produced, slotProps.data.numMachines)" />
-                                        <Button icon="pi pi-plus"
-                                            @mousedown="() => startHoldAdjust(slotProps.data.class, 1)" />
+                                    <div>Outputs</div>
+                                    <div v-if="!getData(slotProps.data.class).products?.length" class="text-sm mt-1">None</div>
+                                    <div v-for="p of getData(slotProps.data.class).products"
+                                        class="flex flex-row align-items-center-center mt-1">
+                                        <div class="px-1 bg-ficsit-primary text-white border-1 border-400 text-sm  border-round-left"
+                                            @click="checkScrollToOutput(p.class, slotProps.data.class)">
+                                            {{ props.mainData.descs[p.class].name || getData(slotProps.data.class).name
+                                            }}
+                                        </div>
+                                        <div class="border-y-1 border-right-1 border-400 text-sm cursor-pointer"
+                                            @click="fulfillGlobalDemand(p.class, slotProps.data)">
+                                            <SupplyDisplay :supply="getGlobalProductDefecit(p.class, props.factories).value" />
+                                        </div>
+                                        <div class="border-y-1 border-400 text-sm cursor-pointer"
+                                            @click="matchOutput(p.class, slotProps.data)">
+                                            <SupplyDisplay :supply="roundNumber(computeSupply(p.class, recipes))" />
+                                        </div>
+                                        <div class="px-1 border-1 border-400 text-sm cursor-pointer border-round-right"
+                                            @click="startSetPpm(slotProps.data.class, p.class)">
+                                            <span>
+                                                {{ roundNumber(computePpm(p.quantity, p.class, slotProps.data)) }}
+                                            </span>
+                                            <span class="text-xxs">
+                                                {{ getUom(p.class, slotProps.data) }}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        <div v-if="getData(slotProps.data.class).message" class="col-12">
+                            <div  class="w-full border-round border-2 border-yellow-900 p-2 text-sm">
+                                👉 {{ getData(slotProps.data.class).message }}
+                            </div>
+                        </div>
+                        <div v-if="getAutobuildNames(getData(slotProps.data.class)?.produced)" class="col-12">
+                            <div class="w-full">
+                                <div class="p-inputgroup flex-1">
+                                    <span title="Balance for maximum overclock" class="p-inputgroup-addon cursor-pointer"
+                                        @click="startSetPpm(slotProps.data.class, getData(slotProps.data.class).products[0].class, false, maxEffectiveOc(slotProps.data.class))">
+                                        🚀
+                                    </span>
+                                    <InputText v-model.number="slotProps.data.overclock" class="w-full" />
+                                    <span title="Balance without overclock" class="p-inputgroup-addon cursor-pointer"
+                                        @click="startSetPpm(slotProps.data.class, getData(slotProps.data.class).products[0].class, false)">
+                                        ⚖️
+                                    </span>
+                                    <span title="Reset to 100% without balancing"
+                                        class="p-inputgroup-addon cursor-pointer"
+                                        @click="() => slotProps.data.overclock = 1">
+                                        <i class="pi pi-refresh" />
+                                    </span>
+                                </div>
+                                <Slider v-model="slotProps.data.overclock" class="w-full" :max="maxEffectiveOc(slotProps.data.class)" :step="0.05"
+                                    style="margin-top: -1px;" />
+                            </div>
+                            <div class="w-full mt-3">
+                                <div class="p-inputgroup flex-1">
+                                    <Button icon="pi pi-minus"
+                                        @mousedown="() => startHoldAdjust(slotProps.data.class, -1)" />
+                                    <InputNumber v-model="slotProps.data.numMachines" inputId="minmax-buttons"
+                                        mode="decimal" :min="1"
+                                        :suffix="'x ' + getAutobuildNames(getData(slotProps.data.class)?.produced, slotProps.data.numMachines)" />
+                                    <Button icon="pi pi-plus"
+                                        @mousedown="() => startHoldAdjust(slotProps.data.class, 1)" />
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </template>
-            </DataView>
-        </div>
+                </div>
+            </template>
+        </DataView>
     </div>
 </template>
 
