@@ -14,12 +14,17 @@ let helpOCValue = 0.675;
 
 <template>
     <div>
+        <h2>Explorer Mode</h2>
+        <p>Select a material from the drop-down list. The adjustable parts-per-minute setting is set to 1 by default.</p>
+        <p>Clicking the 🚀 button will show the required settings for each recipe to match the set parts-per-minute with maximum overclock.</p> 
+        <p>Clicking the ⚖️ button will show the required settings for each recipe to match the set parts-per-minute with no overclock.</p>
+        <hr>
+        <h2>Planner Mode</h2>
         <h3>Need to start over?</h3>
         <p>Use the button bellow to clear all factory data.</p>
         <div class="flex justify-content-center">
             <Button label="Reset Factory Data" severity="warning" @click="() => emit('checkResetFD')" />
         </div>
-        <h3>How to use</h3>
         <p>Manage your "Factories" from the main toolbar. You can copy the current factory data to clipboard to share,
             import exported factory data, delete a factory or edit the factory name (You can click on the factory icon to
             generate a random name).</p>

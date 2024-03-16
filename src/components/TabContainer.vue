@@ -6,7 +6,6 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generator';
 
 import Textarea from 'primevue/textarea';
-import localforage from 'localforage';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
 import AutoComplete from 'primevue/autocomplete';
@@ -277,7 +276,7 @@ onUnmounted(() => {
     </Dialog>
 
     <div class="flex flex-column w-full">
-        <FactorySelector
+        <FactorySelector class="md:sticky"
             :callbacks="{ showOverview, factoryToClipboard, pasteFactory, confirmDelete, editFactoryName, createFactory }"
             :factories="factories" v-model="factory" />
         <div v-if="factory" class="w-full z-3" style="height: calc(100vh - 92px);">

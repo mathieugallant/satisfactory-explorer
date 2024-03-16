@@ -48,7 +48,7 @@ const checkResetFD = () => {
 </script>
 
 <template>
-  <Dialog v-model:visible="showHelp" modal header="Help" class="w-11 lg:w-9">
+  <Dialog v-model:visible="showHelp" modal header="How to use" class="w-11 lg:w-9">
     <Help @checkResetFD="checkResetFD()" />
   </Dialog>
   <div class="w-full">
