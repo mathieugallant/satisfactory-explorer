@@ -217,9 +217,11 @@ const addRecipeToFactory = (factoryId) => {
                                         <h3 class="m-0">
                                             {{ getData(recipe.class).name }}
                                         </h3>
-                                        <div v-if="getAutobuildNames(getData(recipe.class)?.produced)" class="flex flex-row align-items-baseline gap-2">
+                                        <div v-if="getAutobuildNames(getData(recipe.class)?.produced)" class="flex flex-column md:flex-row align-items-baseline gap-2">
                                             <ConsumptionTag :consumption="computeConsumption(recipe)" />
-                                            {{recipe.numMachines}} x {{ getAutobuildNames(getData(recipe.class)?.produced, recipe.numMachines) }} @ {{ Math.round(recipe.overclock * 1000000) / 10000 }}%
+                                            <div>
+                                                {{recipe.numMachines}} x {{ getAutobuildNames(getData(recipe.class)?.produced, recipe.numMachines) }} @ {{ Math.round(recipe.overclock * 1000000) / 10000 }}%
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
