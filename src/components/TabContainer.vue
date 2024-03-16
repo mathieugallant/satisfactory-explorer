@@ -284,7 +284,7 @@ onUnmounted(() => {
         </div>
     </Dialog>
 
-    <div class="w-full md:sticky z-4 top-0"  style="height: 60px;">
+    <div class="w-full md:sticky z-4 top-0 toolbar">
         <FactorySelector
             :callbacks="{ showOverview, factoryToClipboard, pasteFactory, confirmDelete, editFactoryName, createFactory }"
             :factories="factories" v-model="factory" />
@@ -301,4 +301,16 @@ onUnmounted(() => {
 
 .anti-padding {
     margin: -1rem;
-}</style>
+}
+
+
+.toolbar {
+    height: 60px;
+}
+
+@media (max-width: 500px) {
+    .toolbar {
+        height: 120px;
+    }
+}
+</style>
