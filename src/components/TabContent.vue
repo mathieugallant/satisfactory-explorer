@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
+import { ref, watch, onMounted, onUnmounted, computed, nextTick } from 'vue';
 
 import Dropdown from 'primevue/dropdown';
 import Button from 'primevue/button';
@@ -18,6 +18,7 @@ import {
     getGlobalProductDefecit,
     roundNumber,
     isExtractor,
+    isManual,
     getUom,
     getAutobuildNames,
     computeConsumption,
@@ -31,7 +32,7 @@ import ConsumptionTag from './ConsumptionTag.vue';
 
 import DataView from 'primevue/dataview';
 
-const props = defineProps(['mainData', 'modelValue', 'factories']);
+const props = defineProps(['mainData', 'modelValue', 'factories', 'recipeNav']);
 const emits = defineEmits(['update:modelValue']);
 
 const productForRecipe = ref();
@@ -72,6 +73,11 @@ onMounted(() => {
         }
     }, 80);
     window.addEventListener('sankey_node_clicked', handdleMouseClick);
+    if (props.recipeNav) {
+        nextTick(() => {
+            scrollToOutput([props.recipeNav]);
+        })
+    }
 });
 
 const handdleMouseClick = (e) => {
@@ -114,7 +120,6 @@ const matchOutput = (dClass, rData) => {
         targetPpm.value.rClass = rData.class;
         targetPpm.value.dClass = dClass;
         const quantity = data.products.find(x => x.class === dClass)?.quantity;
-        console.log('pipi', quantity, computeSupply(dClass, recipes.value), computePpm(quantity, dClass, recipes.value[rData.class]))
         targetPpm.value.ppm = computePpm(quantity, dClass, recipes.value[rData.class]) - computeSupply(dClass, recipes.value);
         setPpm();
     }
@@ -283,7 +288,7 @@ const scrollToOutput = (candidates, startingCandidate = null) => {
 
 const selectableRecipies = computed(() => {
     return props.mainData.recipes.filter(r => {
-        return !r.produced.includes('BP_BuildGun_C') && !(r.produced.length == 1 && r.produced.includes('BP_WorkshopComponent_C'));
+        return !isManual(r);
     }).sort((a,b) => a.name.localeCompare(b.name));
 });
 
@@ -352,6 +357,7 @@ watch(() => props.modelValue, () => {
                                         <h3 class="m-0">
                                             {{ getData(slotProps.data.class).name }}
                                         </h3>
+                                        <span class="text-sm text-400">{{ slotProps.data.class }}</span>
                                         <ConsumptionTag :consumption="computeConsumption(slotProps.data)" />
                                     </div>
                                 </div>

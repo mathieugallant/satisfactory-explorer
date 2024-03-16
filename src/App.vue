@@ -15,6 +15,7 @@ const confirm = useConfirm();
 const mainData = {};
 const showHelp = ref(false);
 const initialized = ref(false);
+const factoryNav = ref({});
 const mode = ref();
 
 onMounted(() => {
@@ -26,7 +27,8 @@ onMounted(() => {
 
 const setMode = (newMode) => {
   mode.value = newMode;
-  localForage.setItem('lastMode', newMode)
+  localForage.setItem('lastMode', newMode);
+  factoryNav.value = {};
 }
 
 const checkResetFD = () => {
@@ -44,6 +46,12 @@ const checkResetFD = () => {
             })
         }
     });  
+}
+
+const goToFactory = ({factory, recipe}) => {
+  factoryNav.value = {factory, recipe};
+  mode.value = 'planner';
+  localForage.setItem('lastMode', 'planner');
 }
 </script>
 
@@ -76,10 +84,10 @@ const checkResetFD = () => {
       </div>
     </div>
     <div v-if="mode==='planner'" class="w-full">
-      <TabContainer v-if="initialized" :mainData="mainData" />
+      <TabContainer v-if="initialized" :mainData="mainData" :factoryNav="factoryNav" />
     </div>
     <div v-if="mode==='explorer'" class="w-full">
-      <RecipeCompare v-if="initialized" :mainData="mainData" />
+      <RecipeCompare v-if="initialized" :mainData="mainData" @showFactoryMaterial="goToFactory"/>
     </div>
   </div>
   <ConfirmDialog />

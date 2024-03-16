@@ -3,12 +3,14 @@ import Dropdown from 'primevue/dropdown';
 import localforage from 'localforage';
 import { ref, onMounted } from 'vue';
 import InputNumber from 'primevue/inputnumber';
-import Panel from 'primevue/panel';
+import Dialog from 'primevue/dialog';
+import Button from 'primevue/button';
 import {
     extractorFactors,
     getData,
     computePpm,
     isExtractor,
+    isManual,
     getName,
     maxEffectiveOc,
     roundNumber,
@@ -18,10 +20,15 @@ import {
 } from "../utilitites";
 import ConsumptionTag from './ConsumptionTag.vue';
 
+const emits = defineEmits(['showFactoryMaterial']);
+
 const selectedMat = ref(null);
 const allProducts = ref([]);
 const recipes = ref({});
 const usedIn = ref([]);
+const factories = ref([]);
+const addRecipe = ref(null);
+const showAddToFactory = ref(false);
 
 const props = defineProps(['mainData']);
 
@@ -84,7 +91,10 @@ onMounted(() => {
             }
         }).sort((a, b) => a.name.localeCompare(b.name));
         updateRecipes();
-    })
+    });
+    localforage.getItem('factoryData').then(data => {
+        factories.value = data || [];
+    });
 });
 
 const updateRecipes = () => {
@@ -121,9 +131,45 @@ const selectMaterial = (dClass) => {
         saveLastMaterial();
     }
 };
+
+const checkAddToFactory = (recipe) => {
+    addRecipe.value = recipe;
+    showAddToFactory.value = true;
+}
+
+const addRecipeToFactory = (factoryId) => {
+    const targetFactory = factories.value.find(f => f.id === factoryId);
+    targetFactory.factoryData[addRecipe.value.class] = {
+        class: addRecipe.value.class,
+        overclock: targetFactory.factoryData[addRecipe.value.class]?.overclock || addRecipe.value.overclock,
+        numMachines: targetFactory.factoryData[addRecipe.value.class]?.numMachines || addRecipe.value.numMachines,
+        index: targetFactory.factoryData[addRecipe.value.class]?.index || Object.keys(targetFactory.factoryData).length
+    };
+
+    showAddToFactory.value = false;
+    localforage.setItem('factoryData', JSON.parse(JSON.stringify(factories.value))).then(() => emits('showFactoryMaterial', {factory: factoryId, recipe: addRecipe.value.class}));
+};
 </script>
 
 <template>
+    <Dialog v-model:visible="showAddToFactory" header="Add recipe to factory" modal>
+        <div>
+            <div class="flex flex-row flex-center">
+                <div class="mr-5 flex justify-content-end align-items-center">
+                    {{ mainData.recipes.find(r => r.class == addRecipe.class).name }}
+                </div>
+                <i class="pi pi-arrow-right text-xl" />
+                <div class="ml-5 flex flex-column justify-content-center align-items-start gap-1">
+                    <div v-for="factory of factories.filter(f => !Object.keys(f.factoryData).includes(addRecipe.class))" class="px-1 bg-ficsit-secondary text-white border-1 border-400 text-sm border-round cursor-pointer" @click="addRecipeToFactory(factory.id)">
+                        {{ factory.id }}
+                    </div>
+                </div>
+            </div>
+            <div class="text-sm text-400 mt-4">
+                Note: Factories which already produce this recipe are not shown.
+            </div>
+        </div>
+    </Dialog>
     <div class="w-full z-4 flex justify-content-end bg-ficsit-secondary p-2" style="height: 60px;">
         <div class="max-w-full p-inputgroup w-full md:w-8 lg:w-6 xl:w-4">
             <Dropdown v-model="selectedMat" :options="allProducts" optionLabel="name" filter
@@ -176,6 +222,11 @@ const selectMaterial = (dClass) => {
                                             {{recipe.numMachines}} x {{ getAutobuildNames(getData(recipe.class)?.produced, recipe.numMachines) }} @ {{ Math.round(recipe.overclock * 1000000) / 10000 }}%
                                         </div>
                                     </div>
+                                </div>
+                                <div v-if="!isManual(getData(recipe.class))">
+                                    <Button icon="pi pi-plus" severity="success"
+                                        @click="checkAddToFactory(recipe)" size="small"
+                                        class="w-2rem h-2rem" />
                                 </div>
                             </div>
                             <div class="col-12 material-list flex-grow-1">

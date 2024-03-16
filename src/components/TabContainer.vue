@@ -21,10 +21,11 @@ const toast = useToast();
 
 const confirm = useConfirm();
 
-const props = defineProps(['mainData'])
+const props = defineProps(['mainData', 'factoryNav']);
 
 const factories = ref([]);
 const factory = ref(null);
+const recipeNav = ref(null);
 const showChangeFactoryName = ref({});
 const showPasteFactory = ref({});
 const createNewFactory = ref({});
@@ -34,12 +35,20 @@ const showGlobalOverview = ref(false);
 const graph = ref({ nodes: [], links: [] });
 
 localForage.getItem('factoryData').then(data => {
-    localForage.getItem('lastFactory').then((factoryId) => {
-        
-        factories.value = data || [];
-        factory.value = factories.value.find(f => f.id === factoryId) || factories.value[0];
+    factories.value = data || [];
+
+    if (props.factoryNav.factory) {
+        localForage.setItem('lastFactory', JSON.parse(JSON.stringify(props.factoryNav.factory)));
+        recipeNav.value = props.factoryNav.recipe;
+        factory.value = factories.value.find(f => f.id === props.factoryNav.factory);
         loading.value = false;
-    })
+    }
+    else {
+        localForage.getItem('lastFactory').then((factoryId) => {
+            factory.value = factories.value.find(f => f.id === factoryId) || factories.value[0];
+            loading.value = false;
+        })
+    }
 });
 
 const convertFactoriesToGraph = () => {
@@ -280,7 +289,7 @@ onUnmounted(() => {
             :callbacks="{ showOverview, factoryToClipboard, pasteFactory, confirmDelete, editFactoryName, createFactory }"
             :factories="factories" v-model="factory" />
         <div v-if="factory" class="w-full z-3" style="height: calc(100vh - 92px);">
-            <TabContent :mainData="props.mainData" :modelValue="factory" :factories="factories"
+            <TabContent :mainData="props.mainData" :modelValue="factory" :factories="factories" :recipeNav="recipeNav"
                 @update:modelValue="(data) => saveChanges(factory, data)" />
         </div>
     </div>
