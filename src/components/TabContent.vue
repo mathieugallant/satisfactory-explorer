@@ -39,7 +39,7 @@ const route = useRoute();
 const props = defineProps(['mainData', 'modelValue', 'factories']);
 const emits = defineEmits(['update:modelValue']);
 
-const productForRecipe = ref();
+const productForRecipe = ref({});
 const selectedRecipe = ref();
 const recipes = ref({});
 const targetPpm = ref({});
@@ -257,7 +257,7 @@ const checkScrollToOutput = (productClass, startingCandidate = null) => {
 };
 
 const checkAddRecipe = (pClass) => {
-    productForRecipe.value = getName(pClass) || pClass;
+    productForRecipe.value = {name: getName(pClass) || pClass, class: pClass};
     const candidates = getProducingCandidates(pClass);
     if (candidates.length) {
         scrollToOutput(candidates);
@@ -310,15 +310,23 @@ watch(() => props.modelValue, () => {
     });
 });
 
+const goToCompare = (product, targetPpm = 1) => {
+    router.push({ query: { ...route.query, mode: 'explorer', selectedMat: JSON.stringify({id: product.class, name: product.name, targetPpm: Math.abs(targetPpm)}) } });
+}
+
 </script>
 
 <template>
-    <Dialog v-model:visible="showSelectRecipe" modal :header="'Add a Recipe for ' + productForRecipe">
-        <div class="mb-2">
-            Pick a recipe to add :
-        </div>
-        <div class="flex flex-wrap gap-2">
-            <Button v-for="recipe of possibleRecipes" :label="recipe.name" @click="addRecipe(recipe)" />
+    <Dialog v-model:visible="showSelectRecipe" modal :header="'Add a Recipe for ' + productForRecipe.name">
+        <div class="flex flex-column flex-center">
+            <div class="mb-2 w-full">
+                Pick a recipe to add :
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <Button v-for="recipe of possibleRecipes" :label="recipe.name" @click="addRecipe(recipe)" />
+            </div>
+            <div class="my-3">-OR-</div>
+            <div class="border-1 border-400 border-round-sm p-2 bg-green-700 cursor-pointer" @click="goToCompare(productForRecipe, roundNumber(computeSupply(productForRecipe.class, recipes)))">Compare in Explorer</div>
         </div>
     </Dialog>
     <Dialog v-model:visible="targetPpm.visible" modal header="Set Desired Rate Value">

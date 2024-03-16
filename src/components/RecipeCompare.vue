@@ -76,8 +76,8 @@ watch(() => route.query, () => {
     if (route.query.selectedMat){
         const mat = JSON.parse(route.query.selectedMat);
         selectedMat.value = allProducts.value.find(p => p.id === mat.id);
-        selectedMat.value.targetPpm = mat.targetPpm;
-        selectedMat.value.maxOverclock = mat.maxOverclock;
+        selectedMat.value.targetPpm = mat.targetPpm || 1;
+        selectedMat.value.maxOverclock = mat.maxOverclock || 1;
         updateRecipes();
     }
 })
@@ -103,7 +103,10 @@ onMounted(() => {
             targetPpm: 1, 
             maxOverclock: false 
         }
-    }).sort((a, b) => a.name.localeCompare(b.name));
+    }).sort((a, b) => {
+        if (!a.name ) console.log(a)
+        return a.name.localeCompare(b.name)
+    });
     updateRecipes();
     localforage.getItem('factoryData').then(data => {
         factories.value = data || [];
