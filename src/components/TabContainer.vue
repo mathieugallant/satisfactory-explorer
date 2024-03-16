@@ -2,7 +2,7 @@
 import TabContent from './TabContent.vue';
 import FactorySelector from './FactorySelector.vue';
 import localForage from 'localforage';
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generator';
 
 import Textarea from 'primevue/textarea';
@@ -16,16 +16,19 @@ import {
     getAllNetDefecits,
     getAllNetProduction,
 } from "../utilitites";
+import { useRoute, useRouter } from 'vue-router';
+
+const router = useRouter();
+const route = useRoute();
 
 const toast = useToast();
 
 const confirm = useConfirm();
 
-const props = defineProps(['mainData', 'factoryNav']);
+const props = defineProps(['mainData']);
 
 const factories = ref([]);
 const factory = ref(null);
-const recipeNav = ref(null);
 const showChangeFactoryName = ref({});
 const showPasteFactory = ref({});
 const createNewFactory = ref({});
@@ -37,17 +40,21 @@ const graph = ref({ nodes: [], links: [] });
 localForage.getItem('factoryData').then(data => {
     factories.value = data || [];
 
-    if (props.factoryNav.factory) {
-        localForage.setItem('lastFactory', JSON.parse(JSON.stringify(props.factoryNav.factory)));
-        recipeNav.value = props.factoryNav.recipe;
-        factory.value = factories.value.find(f => f.id === props.factoryNav.factory);
+    if (route.query.factory) {
+        factory.value = factories.value.find(f => f.id === route.query.factory);
         loading.value = false;
     }
-    else {
-        localForage.getItem('lastFactory').then((factoryId) => {
-            factory.value = factories.value.find(f => f.id === factoryId) || factories.value[0];
-            loading.value = false;
-        })
+});
+
+watch(() => route.query, () => {
+    if (route.query.factory){
+        factory.value = factories.value.find(f => f.id === route.query.factory);
+    }
+});
+
+watch(() => factory.value, () => {
+    if (factory.value?.id) {
+        router.push({ query: { ...route.query, factory: factory.value.id } });
     }
 });
 
@@ -101,13 +108,14 @@ const createFactory = () => {
 
 const doCreateFactory = () => {
     factories.value.push({ id: createNewFactory.value.name.trim() });
-    factory.value = factories.value.at(-1);
     createNewFactory.value.visible = false;
+    router.push({ query: { ...route.query, factory: factories.value.at(-1).id } });
     saveChanges();
 };
 
 const deleteFactory = () => {
     factories.value = factories.value.filter(f => f.id !== factory.value.id);
+    router.push({ query: { ...route.query, factory: null } });
     factory.value = null;
     saveChanges();
 };
@@ -120,6 +128,7 @@ const editFactoryName = () => {
 const updateFactoryName = () => {
     showChangeFactoryName.value.visible = false;
     factory.value.id = showChangeFactoryName.value.newFactoryName.trim();
+    router.push({ query: { ...route.query, factory: factory.value.id } });
     saveChanges();
 };
 
@@ -290,7 +299,7 @@ onUnmounted(() => {
             :factories="factories" v-model="factory" />
     </div>
     <div v-if="factory" class="w-full z-3 md:overflow-y-scroll" style="height: calc(100vh - 92px);">
-        <TabContent :mainData="props.mainData" :modelValue="factory" :factories="factories" :recipeNav="recipeNav"
+        <TabContent :mainData="props.mainData" :modelValue="factory" :factories="factories"
             @update:modelValue="(data) => saveChanges(factory, data)" />
     </div>
 </template>

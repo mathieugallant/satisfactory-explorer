@@ -31,8 +31,12 @@ import FactoryIOs from './FactoryIOs.vue';
 import ConsumptionTag from './ConsumptionTag.vue';
 
 import DataView from 'primevue/dataview';
+import { useRoute, useRouter } from 'vue-router';
 
-const props = defineProps(['mainData', 'modelValue', 'factories', 'recipeNav']);
+const router = useRouter();
+const route = useRoute();
+
+const props = defineProps(['mainData', 'modelValue', 'factories']);
 const emits = defineEmits(['update:modelValue']);
 
 const productForRecipe = ref();
@@ -73,9 +77,10 @@ onMounted(() => {
         }
     }, 80);
     window.addEventListener('sankey_node_clicked', handdleMouseClick);
-    if (props.recipeNav) {
+    if (route.query.recipe) {
+        router.push({ query: { ...route.query, recipe: null } });
         nextTick(() => {
-            scrollToOutput([props.recipeNav]);
+            scrollToOutput([route.query.recipe]);
         })
     }
 });
@@ -323,7 +328,7 @@ watch(() => props.modelValue, () => {
             <Button label="Set!" :disabled="!Number(targetPpm.ppm)" @click="setPpm()" />
         </div>
     </Dialog>
-    <div class="w-full p-3 pb-0 md:sticky surface-0 z-5 md:sticky border-bottom-1 border-100 top-0">
+    <div class="w-full p-3 pb-0 surface-0 z-5 md:sticky border-bottom-1 border-100">
         <FactoryIOs :recipes="recipes" @check-add-recipe="checkAddRecipe" />
     </div>
     <div class="p-2 w-full">
@@ -356,7 +361,7 @@ watch(() => props.modelValue, () => {
                                     <h3 class="m-0">
                                         {{ getData(slotProps.data.class).name }}
                                     </h3>
-                                    <span class="text-sm text-400">{{ slotProps.data.class }}</span>
+                                    <span class="text-xs text-400">{{ slotProps.data.class }}</span>
                                     <ConsumptionTag :consumption="computeConsumption(slotProps.data)" />
                                 </div>
                             </div>
@@ -517,4 +522,5 @@ watch(() => props.modelValue, () => {
         margin-right: 0.5rem;
         margin-bottom: 0rem;
     }
-}</style>
+}
+</style>

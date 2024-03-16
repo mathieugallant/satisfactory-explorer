@@ -18,7 +18,8 @@
     "primeicons": "^6.0.1",
     "primevue": "^3.27.0",
     "unique-names-generator": "^4.7.1",
-    "vue": "^3.2.47"
+    "vue": "^3.2.47",
+    "vue-router": "^4.3.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.0.0",

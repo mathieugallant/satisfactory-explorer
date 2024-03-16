@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, nextTick } from 'vue';
+import { onMounted, ref, nextTick, computed } from 'vue';
 import TabContainer  from './components/TabContainer.vue';
 import RecipeCompare from './components/RecipeCompare.vue';
 import ConfirmDialog from 'primevue/confirmdialog';
@@ -10,25 +10,25 @@ import Descriptions from "./descData.json";
 import Help from "./components/Help.vue"
 import Dialog from 'primevue/dialog';
 import localForage from 'localforage';
+import { useRoute, useRouter } from 'vue-router';
+
+const router = useRouter();
+const route = useRoute();
 const confirm = useConfirm();
 
 const mainData = {};
 const showHelp = ref(false);
 const initialized = ref(false);
-const factoryNav = ref({});
-const mode = ref();
+const mode = computed(() => route.query.mode);
 
 onMounted(() => {
   mainData.recipes = Recipies;
   mainData.descs = Descriptions;
   initialized.value = true;
-  localForage.getItem('lastMode').then(newMode => mode.value = newMode || "explorer");
 });
 
 const setMode = (newMode) => {
-  mode.value = newMode;
-  localForage.setItem('lastMode', newMode);
-  factoryNav.value = {};
+  router.push({ query: { ...route.query, mode: newMode } });
 }
 
 const checkResetFD = () => {
@@ -46,12 +46,6 @@ const checkResetFD = () => {
             })
         }
     });  
-}
-
-const goToFactory = ({factory, recipe}) => {
-  factoryNav.value = {factory, recipe};
-  mode.value = 'planner';
-  localForage.setItem('lastMode', 'planner');
 }
 </script>
 
@@ -84,10 +78,10 @@ const goToFactory = ({factory, recipe}) => {
       </div>
     </div>
     <div v-if="mode==='planner'" class="w-full">
-      <TabContainer v-if="initialized" :mainData="mainData" :factoryNav="factoryNav" />
+      <TabContainer v-if="initialized" :mainData="mainData"/>
     </div>
     <div v-if="mode==='explorer'" class="w-full">
-      <RecipeCompare v-if="initialized" :mainData="mainData" @showFactoryMaterial="goToFactory"/>
+      <RecipeCompare v-if="initialized" :mainData="mainData"/>
     </div>
   </div>
   <ConfirmDialog />

@@ -1,7 +1,7 @@
 <script setup>
 import Dropdown from 'primevue/dropdown';
 import localforage from 'localforage';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import InputNumber from 'primevue/inputnumber';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
@@ -19,10 +19,14 @@ import {
     computeConsumption,
 } from "../utilitites";
 import ConsumptionTag from './ConsumptionTag.vue';
+import { useRoute, useRouter } from 'vue-router';
+
+const router = useRouter();
+const route = useRoute();
 
 const emits = defineEmits(['showFactoryMaterial']);
 
-const selectedMat = ref(null);
+const selectedMat = ref({});
 const allProducts = ref([]);
 const recipes = ref({});
 const usedIn = ref([]);
@@ -32,14 +36,14 @@ const showAddToFactory = ref(false);
 
 const props = defineProps(['mainData']);
 
-const saveLastMaterial = () => {
-    localforage.setItem('lastMaterial', JSON.parse(JSON.stringify(selectedMat.value)));
+const setMaterialState = () => {
+    router.push({ query: { ...route.query, selectedMat: JSON.stringify(selectedMat.value) } });
     updateRecipes();
 };
 
 const setTargetOverclock = (max = false) => {
     selectedMat.value.maxOverclock = max;
-    saveLastMaterial();
+    setMaterialState();
 };
 
 const setPpm = (rClass) => {
@@ -68,6 +72,16 @@ const setPpm = (rClass) => {
     recipes.value[rClass].overclock = selectedMat.value.targetPpm / (baseRate * targetNumMachines * factor) || 0;
 };
 
+watch(() => route.query, () => {
+    if (route.query.selectedMat){
+        const mat = JSON.parse(route.query.selectedMat);
+        selectedMat.value = allProducts.value.find(p => p.id === mat.id);
+        selectedMat.value.targetPpm = mat.targetPpm;
+        selectedMat.value.maxOverclock = mat.maxOverclock;
+        updateRecipes();
+    }
+})
+
 onMounted(() => {
     const matSet = new Set();
     props.mainData.recipes.forEach(r => {
@@ -77,21 +91,20 @@ onMounted(() => {
             }
         });
     });
-    localforage.getItem('lastMaterial').then(mat => {
-        allProducts.value = [...matSet].map(id => {
-            if (mat && id === mat.id) {
-                selectedMat.value = mat;
-                return mat;
-            }
-            return { 
-                id, 
-                name: props.mainData.descs[id]?.name || id, 
-                targetPpm: 1, 
-                maxOverclock: false 
-            }
-        }).sort((a, b) => a.name.localeCompare(b.name));
-        updateRecipes();
-    });
+    const mat = JSON.parse(route.query.selectedMat || '{}');
+    allProducts.value = [...matSet].map(id => {
+        if (mat && id === mat.id) {
+            selectedMat.value = mat;
+            return mat;
+        }
+        return { 
+            id, 
+            name: props.mainData.descs[id]?.name || id, 
+            targetPpm: 1, 
+            maxOverclock: false 
+        }
+    }).sort((a, b) => a.name.localeCompare(b.name));
+    updateRecipes();
     localforage.getItem('factoryData').then(data => {
         factories.value = data || [];
     });
@@ -128,7 +141,7 @@ const selectMaterial = (dClass) => {
     const mat = allProducts.value.find(m => m.id === dClass);
     if (mat) {
         selectedMat.value = mat;
-        saveLastMaterial();
+        setMaterialState();
     }
 };
 
@@ -147,7 +160,11 @@ const addRecipeToFactory = (factoryId) => {
     };
 
     showAddToFactory.value = false;
-    localforage.setItem('factoryData', JSON.parse(JSON.stringify(factories.value))).then(() => emits('showFactoryMaterial', {factory: factoryId, recipe: addRecipe.value.class}));
+    localforage
+        .setItem('factoryData', JSON.parse(JSON.stringify(factories.value)))
+        .then(() => {
+            router.push({ query: { ...route.query, mode: 'planner', factory: factoryId, recipe: addRecipe.value.class } });
+        });
 };
 </script>
 
@@ -173,7 +190,7 @@ const addRecipeToFactory = (factoryId) => {
     <div class="w-full z-4 flex justify-content-end bg-ficsit-secondary p-2" style="height: 60px;">
         <div class="max-w-full p-inputgroup w-full md:w-8 lg:w-6 xl:w-4">
             <Dropdown v-model="selectedMat" :options="allProducts" optionLabel="name" filter
-                placeholder="Select a material" @change="saveLastMaterial">
+                placeholder="Select a material" @change="setMaterialState">
                 <template #option="slotProps">
                     <div>
                         <div>{{ slotProps.option.name }}</div>
@@ -184,7 +201,7 @@ const addRecipeToFactory = (factoryId) => {
         </div>
     </div>
     <div class="w-full md:overflow-y-scroll" style="height: calc(100vh - 92px);">
-        <div v-if="selectedMat" class="w-full flex flex-column gap-3 p-2">
+        <div v-if="selectedMat.id" class="w-full flex flex-column gap-3 p-2">
             <div class="w-full">
                 <h1 class="mb-0">{{ props.mainData.descs[selectedMat.id].name }}</h1>
                 <span class="text-400">{{ selectedMat.id }}</span>
@@ -195,7 +212,7 @@ const addRecipeToFactory = (factoryId) => {
             <div v-if="Object.values(recipes).length" class="surface-card surface-border border-1 border-round-md p-3">
                 <h3 class="mt-2">Recipes</h3>
                 <div v-if="hasAutobuild()" class="p-inputgroup w-20rem">
-                    <InputNumber v-model="selectedMat.targetPpm" mode="decimal" :min="0" :minFractionDigits="0" :maxFractionDigits="5" :step="0.1" suffix=" / minute" placeholder="Target Rate" @update:modelValue="saveLastMaterial" />
+                    <InputNumber v-model="selectedMat.targetPpm" mode="decimal" :min="0" :minFractionDigits="0" :maxFractionDigits="5" :step="0.1" suffix=" / minute" placeholder="Target Rate" @update:modelValue="setMaterialState" />
                     <span title="Balance for maximum overclock"
                         class="p-inputgroup-addon cursor-pointer"
                         @click="setTargetOverclock(true)">

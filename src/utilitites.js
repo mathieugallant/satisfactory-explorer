@@ -114,7 +114,9 @@ export const getAllNetDefecits = (factoryConfig) => {
 export const getGlobalProductDefecit = (pClass, factories) => {
     const res = {desc: pClass, name: getName(pClass), value: 0};
     factories.forEach(f => {
-        res.value += computeSupply(pClass, f.factoryData);
+        if (f.factoryData){
+            res.value += computeSupply(pClass, f.factoryData);
+        }
     });
     
     res.value = roundNumber(res.value);
