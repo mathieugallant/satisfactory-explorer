@@ -24,7 +24,6 @@ import {
     computeConsumption,
     maxEffectiveOc,
 } from "../utilitites";
-const confirm = useConfirm();
 
 import SupplyDisplay from './SupplyDisplay.vue';
 import FactoryIOs from './FactoryIOs.vue';
@@ -33,6 +32,7 @@ import ConsumptionTag from './ConsumptionTag.vue';
 import DataView from 'primevue/dataview';
 import { useRoute, useRouter } from 'vue-router';
 
+const confirm = useConfirm();
 const router = useRouter();
 const route = useRoute();
 
@@ -54,6 +54,7 @@ const holdAdjustMachines = {
     rate: 0,
     multiplier: 0
 };
+const graph = ref({ nodes: [], links: [] });
 
 onMounted(() => {
     recipes.value = props.modelValue.factoryData || {};
@@ -234,7 +235,7 @@ const setPpm = (targetOverclock = 1) => {
     }
 
     const baseRate = (quantity /
-        (props.mainData.descs[dClass].form === "RF_LIQUID" && !isExtractor(prodData) ? 1000 : 1)
+        (props.mainData.descs[dClass].form === "RF_LIQUID" && !isExtractor(prodData) ? 1000 : 1) * correction
     ) * (60 / prodData.duration);
 
     let targetNumMachines = targetPpm.value.ppm / factor * correction / baseRate / targetOverclock;
@@ -297,6 +298,13 @@ const selectableRecipies = computed(() => {
     }).sort((a,b) => a.name.localeCompare(b.name));
 });
 
+watch(() => route.query, () => {
+    if (route.query.recipe){
+        router.push({ query: { ...route.query, recipe: null} });
+        scrollToOutput([route.query.recipe]);
+    }
+});
+
 watch(recipes, () => {
     emits('update:modelValue', recipes.value);
 }, { deep: true });
@@ -313,14 +321,13 @@ watch(() => props.modelValue, () => {
 const goToCompare = (product, targetPpm = 1) => {
     router.push({ query: { ...route.query, mode: 'explorer', selectedMat: JSON.stringify({id: product.class, name: product.name, targetPpm: Math.abs(targetPpm)}) } });
 }
-
 </script>
 
 <template>
-    <Dialog v-model:visible="showSelectRecipe" modal :header="'Add a Recipe for ' + productForRecipe.name">
+    <Dialog v-model:visible="showSelectRecipe" modal header=" ">
         <div class="flex flex-column flex-center">
             <div class="mb-2 w-full">
-                Pick a recipe to add :
+                Pick a recipe to add to this factory :
             </div>
             <div class="flex flex-wrap gap-2">
                 <Button v-for="recipe of possibleRecipes" :label="recipe.name" @click="addRecipe(recipe)" />

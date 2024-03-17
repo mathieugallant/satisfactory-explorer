@@ -12,6 +12,8 @@ import AutoComplete from 'primevue/autocomplete';
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from 'primevue/usetoast';
 import Sankeyfy from './Sankeyfy.vue';
+import SankeyfyLocal from './SankeyfyLocal.vue';
+
 import {
     getAllNetDefecits,
     getAllNetProduction,
@@ -30,6 +32,7 @@ const props = defineProps(['mainData']);
 const factories = ref([]);
 const factory = ref(null);
 const showChangeFactoryName = ref({});
+const showFactoryOverview = ref(false);
 const showPasteFactory = ref({});
 const createNewFactory = ref({});
 const nameSuggestions = ref([]);
@@ -228,8 +231,17 @@ const handdleMouseClick = (e) => {
     }
     if (data.factory_id || (data.material_class && data.produced === 0 )) {
         showGlobalOverview.value = false;
+        showFactoryOverview.value = false;
+    }
+    if (data.recipe_id) {
+        showFactoryOverview.value = false;
+        router.push({ query: { ...route.query, recipe: data.recipe_id } });
     }
 };
+
+const setShowFactoryOverview = () => {
+    showFactoryOverview.value = true;
+}
 
 onMounted(() => {
     window.addEventListener('sankey_node_clicked', handdleMouseClick);
@@ -241,6 +253,10 @@ onUnmounted(() => {
 
 </script>
 <template>
+    <Dialog v-model:visible="showFactoryOverview" modal :header="`${factory?.id} Overview`" class="w-11"
+        style="max-height: calc(100vh - 20px);">
+        <SankeyfyLocal />
+    </Dialog>
     <Dialog v-model:visible="showGlobalOverview" modal header="Global Overview" class="w-11"
         style="max-height: calc(100vh - 20px);">
         <Sankeyfy :graph="graph" :factories="factories" />
@@ -295,7 +311,7 @@ onUnmounted(() => {
 
     <div class="w-full md:sticky z-4 top-0 toolbar">
         <FactorySelector
-            :callbacks="{ showOverview, factoryToClipboard, pasteFactory, confirmDelete, editFactoryName, createFactory }"
+            :callbacks="{ showOverview, factoryToClipboard, pasteFactory, confirmDelete, editFactoryName, createFactory, setShowFactoryOverview }"
             :factories="factories" v-model="factory" />
     </div>
     <div v-if="factory" class="w-full z-3 md:overflow-y-scroll" style="height: calc(100vh - 92px);">

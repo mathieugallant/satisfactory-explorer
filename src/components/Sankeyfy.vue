@@ -47,23 +47,12 @@ const handdleMouseClick = (e) => {
 };
 
 const computeSankeyProps = () => {
-    const pathRecursive = (source, depth = 0, visited = []) => {
-        visited.push(source);
-        return depth + props.graph.links.filter(l => l.source === source && !visited.includes(l.target))
-            .map(l => pathRecursive(l.target, depth+1, visited))
-            .reduce((p, c) => p > c ? p : c, 0);
-    }
-    
-    const paths = props.graph.links.map(l => {
-        return pathRecursive(l.source);
-    });
-
-
     return {
-        width: document.getElementById(snkid)?.clientHeight,
-        height: document.getElementById(snkid)?.clientHeight,
+        // use a 16:9 display ratio
+        width: document.getElementById(snkid)?.clientWidth,
+        height: document.getElementById(snkid)?.clientWidth*0.5625,
         logarithmic: false,
-        iterations: 60
+        iterations: 2
     };
 }
 
@@ -105,7 +94,7 @@ onUnmounted(() => {
                                 </div>
                                 <div
                                     class="flex h-full border-y-1 border-right-1 p-1 align-items-baseline justify-content-end border-round-right white-space-nowrap border-400 px-1 py-0 w-6rem">
-                                    {{ roundNumber(tooltipData.produced) }} <span class="text-xxs">/minute</span>
+                                    {{ roundNumber(tooltipData.produced) }} <span class="text-xxs">/min</span>
                                 </div>
                             </div>
                             <div class="flex flex-row text-sm mt-1" style="height: 24px;">
@@ -115,7 +104,7 @@ onUnmounted(() => {
                                 </div>
                                 <div
                                     class="flex h-full border-y-1 border-right-1 p-1 align-items-baseline justify-content-end border-round-right white-space-nowrap border-400 px-1 py-0 w-6rem">
-                                    {{ roundNumber(tooltipData.consumed) }} <span class="text-xxs">/minute</span>
+                                    {{ roundNumber(tooltipData.consumed) }} <span class="text-xxs">/min</span>
                                 </div>
                             </div>
                         </div>
@@ -124,7 +113,7 @@ onUnmounted(() => {
                                 Net {{ tooltipData.consumed > tooltipData.produced ? 'Deficit' : 'Surplus' }} : 
                             </div>
                             <div :class="`text-${tooltipData.consumed > tooltipData.produced ? 'red' : 'green'}-700 text-xl`">
-                                {{ roundNumber(tooltipData.produced - tooltipData.consumed)  }} <span class="text-sm">/ minute</span>
+                                {{ roundNumber(tooltipData.produced - tooltipData.consumed)  }} <span class="text-sm">/min</span>
                             </div>
                         </div>
                     </div>
@@ -142,81 +131,3 @@ onUnmounted(() => {
     <ProgressBar v-if="loading" class="mt-2" mode="indeterminate" style="height: 6px"></ProgressBar>
     <div :id="snkid"  @mousemove="updateToolTipPosition" class="sankey-container" style="max-height: 60vw;"></div>
 </template>
-
-<style>
-    .flow-arrow::after {
-        content: "";
-        position: absolute;
-        right: -12px; 
-        width: 0;
-        height: 0;
-        border-left: 12px solid var(--green-900);
-        border-top: 12px solid transparent;
-        border-bottom: 12px solid transparent;
-    }
-    .sankey-container {
-        height: 80vh;
-    }
-    .surface-50-trans {
-        background-color: #262b2caa;
-    }
-    .sankey-node {
-        fill: green;
-        stroke-width: 2;
-        transition: opacity 0.2s ease-out;
-    }
-
-    .sankey-node.dim {
-        pointer-events: none;
-        opacity: 0.2;
-    }
-
-    .sankey-link {
-        transition: opacity 0.2s ease-out;
-    }
-
-    .sankey-link.dim {
-        pointer-events: none;
-        opacity: 0.02;
-    }
-
-    .sankey-label {
-        cursor: default;
-        font-size: 80%;
-        font-weight: 400;
-        fill: #fff;
-        text-shadow: 0 1px 0 #5F668C;
-    }
-
-    .sankey-label.dim {
-        opacity: 0.2;
-    }
-
-    .sankey-top-link {
-        stroke: gray;
-        opacity: 0.4;
-    }
-
-    .sankey-top-link.highlight {
-        animation: pblink 0.5s linear alternate;
-        animation-iteration-count: infinite;
-    }
-
-    rect.highlight {
-        animation: rblink 0.5s linear alternate;
-        animation-iteration-count: infinite;
-    }
-
-    @keyframes pblink {
-        to {
-            stroke: red;
-        }
-    }
-
-    @keyframes rblink {
-        to {
-            stroke: #b3921d;
-            fill: #665311;
-        }
-    }
-</style>

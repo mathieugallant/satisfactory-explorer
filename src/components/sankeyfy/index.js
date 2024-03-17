@@ -137,7 +137,7 @@ export const sankeyfy = ({
         const x = xpos(d);
         if (!d?.labels?.length) return [{label: d.name, x, pos: "0em", data: d}];
         const y = d.x0 < width / 2 ? 1: (-1 * (d.labels.length -1));
-        return d.labels.map((s, i) => {return {label: s, x, pos: (i?1:y)+"em", data: d}})
+        return d.labels.map((s, i) => {return {label: s, x, pos: (i?1.3:y)+"em", data: d}})
       })
       .enter()
       .append('tspan')
@@ -261,9 +261,9 @@ function linkAngle(link) {
 
 
 function addCircularPathData(links) {
-  let baseRadius = 1;
+  let baseRadius = 10;
 
-  let circularLinkGap = 1;
+  let circularLinkGap = 5;
 
   //add the base data for each link
   links.forEach(function (link, i) {
@@ -323,9 +323,9 @@ function addCircularPathData(links) {
       let positionOffset = sameCircularTypeLinks.reduce((p, c) => p + c.width + circularLinkGap, 0);
       sameCircularTypeLinks.forEach(function (l, i) {
         if (l.circularLinkID == link.circularLinkID) {
-          link.circularPathData.leftNodeBuffer += (sameCircularTypeLinks.length - i) * link.width;
-          link.circularPathData.rightNodeBuffer += (sameCircularTypeLinks.length - i) * link.width;
-          link.circularPathData.verticalBuffer = (link.width * 2) + positionOffset + ((sameCircularTypeLinks.length - i) * circularLinkGap);
+          link.circularPathData.leftNodeBuffer += (sameCircularTypeLinks.length - i) * circularLinkGap * i;
+          link.circularPathData.rightNodeBuffer += (sameCircularTypeLinks.length - i) * circularLinkGap * i;
+          link.circularPathData.verticalBuffer = link.width + positionOffset + ((sameCircularTypeLinks.length - i) * circularLinkGap);
 
         }
         positionOffset = positionOffset - l.width * 1.5;
@@ -339,13 +339,13 @@ function addCircularPathData(links) {
 
       //bottom links
       if (link.circularLinkType == "bottom") {
-        link.circularPathData.verticalFullExtent = Math.max(link.y0, link.y1) + link.circularPathData.verticalBuffer + Math.abs(link.y0 - link.y1);
+        link.circularPathData.verticalFullExtent = Math.max(link.y0, link.y1) + link.circularPathData.verticalBuffer * 2;
         link.circularPathData.verticalLeftInnerExtent = link.circularPathData.verticalFullExtent - link.circularPathData.leftLargeArcRadius;
         link.circularPathData.verticalRightInnerExtent = link.circularPathData.verticalFullExtent - link.circularPathData.rightLargeArcRadius;
       }
       //top links
       else {
-        link.circularPathData.verticalFullExtent = Math.min(link.y0, link.y1) - 20 - link.circularPathData.verticalBuffer;
+        link.circularPathData.verticalFullExtent = Math.min(link.y0, link.y1) - link.circularPathData.verticalBuffer * 2;
         link.circularPathData.verticalLeftInnerExtent = link.circularPathData.verticalFullExtent + link.circularPathData.leftLargeArcRadius;
         link.circularPathData.verticalRightInnerExtent = link.circularPathData.verticalFullExtent + link.circularPathData.rightLargeArcRadius;
       }

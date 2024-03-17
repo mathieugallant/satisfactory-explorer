@@ -59,7 +59,7 @@ const setPpm = (rClass) => {
     }
 
     const baseRate = (quantity /
-        (props.mainData.descs[dClass].form === "RF_LIQUID" && !isExtractor(prodData) ? 1000 : 1)
+        (props.mainData.descs[dClass].form === "RF_LIQUID" && !isExtractor(prodData) ? 1000 : 1) * correction
     ) * (60 / prodData.duration);
 
     let targetNumMachines = selectedMat.value.targetPpm / factor * correction / baseRate / targetOverclock;
@@ -104,7 +104,6 @@ onMounted(() => {
             maxOverclock: false 
         }
     }).sort((a, b) => {
-        if (!a.name ) console.log(a)
         return a.name.localeCompare(b.name)
     });
     updateRecipes();
