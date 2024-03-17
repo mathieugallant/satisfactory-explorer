@@ -319,7 +319,7 @@ watch(() => props.modelValue, () => {
 });
 
 const goToCompare = (product, targetPpm = 1) => {
-    router.push({ query: { ...route.query, mode: 'explorer', selectedMat: JSON.stringify({id: product.class, name: product.name, targetPpm: Math.abs(targetPpm)}) } });
+    router.push({ query: { ...route.query, mode: 'explorer', selectedMat: JSON.stringify({id: product.class, name: product.name, targetPpm: Math.abs(targetPpm) || 1}) } });
 }
 </script>
 
