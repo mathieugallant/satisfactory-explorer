@@ -42,7 +42,7 @@ const setMaterialState = () => {
 };
 
 const setTargetOverclock = (max = false) => {
-    selectedMat.value.maxOverclock = max;
+    selectedMat.value.maxOverclock = !!max;
     setMaterialState();
 };
 
@@ -77,7 +77,7 @@ watch(() => route.query, () => {
         const mat = JSON.parse(route.query.selectedMat);
         selectedMat.value = allProducts.value.find(p => p.id === mat.id);
         selectedMat.value.targetPpm = mat.targetPpm || 1;
-        selectedMat.value.maxOverclock = mat.maxOverclock || 1;
+        selectedMat.value.maxOverclock = mat.maxOverclock || false;
         updateRecipes();
     }
 })

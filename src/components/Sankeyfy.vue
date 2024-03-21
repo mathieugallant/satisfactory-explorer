@@ -52,7 +52,7 @@ const computeSankeyProps = () => {
         width: document.getElementById(snkid)?.clientWidth,
         height: document.getElementById(snkid)?.clientWidth*0.5625,
         logarithmic: false,
-        iterations: 2
+        iterations: 1
     };
 }
 

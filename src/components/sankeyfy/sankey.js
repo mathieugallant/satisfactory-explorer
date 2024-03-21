@@ -164,7 +164,7 @@ export const Plot = function () {
             computeLinkBreadths(graph)
     
             //spreadNodes(graph, y0, py)
-            //resolveNodesOverlap(graph, y0, py)
+            //expandNodesDown(graph, y0, py)
             spreadNodes(graph, y0, py)
             
             // 7.  Sort links per node, based on the links' source/target nodes' breadths
@@ -172,14 +172,17 @@ export const Plot = function () {
             var linkSortingIterations = iterations;
             for (var iteration = 0; iteration < linkSortingIterations; iteration++) {
                 resolveNodeLinkOverlaps(graph, y0, y1, id);
-                resolveNodesOverlap(graph, y0, py)
                 deTangle(graph);   
+                spreadNodes(graph, y0, py)
                 
                 await yieldControl();
             } 
             
-            resolveNodesOverlap(graph, y0, py)
+//            spreadNodes(graph, y0, py)
+//            resolveNodeLinkOverlaps(graph, y0, y1, id);
+            //deTangle(graph); 
             //showNodeLinkOverlap(graph, y0, y1, id);
+            //selectCircularLinkTypes(graph, id)
             sortSourceLinks(graph, y1, id);
             sortTargetLinks(graph, y1, id);
     
@@ -1311,53 +1314,32 @@ function spreadNodes(graph, y0, py) {
             return d.values
         })
 
-    const columnYs = [];
-
-    columns.forEach(nodes => {
-        var node, dy, y = y0, n = nodes.length, i
-        // Push any overlapping nodes down.
-        nodes.sort(ascendingBreadth)
-        let maxY = 0;
-        for (i = 0; i < n; ++i) {
-            node = nodes[i]
-            dy = y - node.y0
-
-            if (dy > 0) {
-                node.y0 += dy
-                node.y1 += dy
-                node.targetLinks.forEach(l => {
-                    l.y1 = l.y1 + dy
-                })
-                node.sourceLinks.forEach(l => {
-                    l.y0 = l.y0 + dy
-                })
-            }
-            y = node.y1 + py
-            maxY = Math.max(maxY, node.y1);
-        }
-        columnYs.push(maxY);
-    })
-    const maxY1 = Math.max(...columnYs);
     columns.forEach((nodes) => {
+        nodes.sort(ascendingBreadth);
         if (nodes.length > 1) {
-            const dy = (maxY1 - nodes.at(-1).y1) / (nodes.length - 1);
-      
             for (let i = 1; i < nodes.length; i++) {
                 let node = nodes[i]
-                node.y0 += dy * i
-                node.y1 += dy * i
-                node.targetLinks.forEach(l => {
-                    l.y1 += dy * i
-                })
-                node.sourceLinks.forEach(l => {
-                    l.y0 += dy * i
-                })
+                const overlap = nodes[i-1].y1 + py - node.y0;
+                if (overlap > 0) {
+                    nodes.forEach((n, ni) => {
+                        if (ni === i ) return;
+                        const factor = ni - i > 0 ? 1 : -1;
+                        n.y0 += overlap * factor
+                        n.y1 += overlap * factor
+                        n.targetLinks.forEach(l => {
+                            l.y1 += overlap * factor
+                        })
+                        n.sourceLinks.forEach(l => {
+                            l.y0 += overlap * factor
+                        })
+                    })
+                }
             }
         }
     })
 }
 
-function resolveNodesOverlap(graph, y0, py) {
+function expandNodesDown(graph, y0, py) {
     var columns = nest()
         .key(function (d) {
             return d.column
