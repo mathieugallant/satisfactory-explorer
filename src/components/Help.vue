@@ -26,11 +26,12 @@ let helpOCValue = 0.675;
             <Button label="Reset Factory Data" severity="warning" @click="() => emit('checkResetFD')" />
         </div>
         <p>Manage your "Factories" from the main toolbar. You can copy the current factory data to clipboard to share,
-            import exported factory data, delete a factory or edit the factory name (You can click on the factory icon to
-            generate a random name).</p>
+            import exported factory data, delete a factory or edit the factory name (You can click 🏭 to
+            generate a random name in those dialog boxes).</p>
         <p class="hidden md:block">
             A global oberview <i class="pi pi-globe" /> is also available which displays the overall material flow across all your factories.
         </p>
+        <p>Use the <i class="pi pi-eye" /> button to hide/unhide this factory from the global production setup.</p>
         <FactorySelector 
             :callbacks="{showOverview: ()=>null, factoryToClipboard: ()=>null, pasteFactory: ()=>null, confirmDelete: ()=>null, editFactoryName: ()=>null, createFactory: ()=>null}"
             :factories="[{id: 'Example Factory'}]"

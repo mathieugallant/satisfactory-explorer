@@ -65,7 +65,7 @@ const convertFactoriesToGraph = () => {
     const tNodes = {};
     graph.value.links = [];
     graph.value.nodes = [];
-    factories.value.forEach(f => {
+    factories.value.filter(f => !f.hidden).forEach(f => {
         graph.value.nodes.push({ id: f.id, name: f.id, data: { factory_id: f.id } })
         getAllNetProduction(f.factoryData).forEach(p => {
             tNodes[p.desc] ??= { id: p.name, name: p.name, desc: p.desc, production: 0, consumption: 0 };

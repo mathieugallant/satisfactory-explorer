@@ -53,7 +53,7 @@ export const computeFactoryConsumption = (factoryConfig) => {
 
 export const conputeGlobalConsumption = (factories) => {
     let globalPower = 0;
-    factories.forEach((factory) => globalPower += Object.values(factory.factoryData).reduce((p, data) => {
+    factories.filter(f => !f.hidden).forEach((factory) => globalPower += Object.values(factory.factoryData).reduce((p, data) => {
         const prodData = getData(data.class);
         const defaultProducer = descs[prodData.produced.filter(x => !manualBuildClasses.includes(x))?.[0]];
     
@@ -114,7 +114,7 @@ export const getAllNetDefecits = (factoryConfig) => {
 
 export const getGlobalProductDefecit = (pClass, factories) => {
     const res = {desc: pClass, name: getName(pClass), value: 0};
-    factories.forEach(f => {
+    factories.filter(f => !f.hidden).forEach(f => {
         if (f.factoryData){
             res.value += computeSupply(pClass, f.factoryData);
         }

@@ -422,7 +422,7 @@ const goToCompare = (product, targetPpm = 1) => {
                                             {{ props.mainData.descs[p.class].name || getData(slotProps.data.class).name
                                             }}
                                         </div>
-                                        <div class="border-y-1 border-right-1 border-400 text-sm cursor-pointer"
+                                        <div v-if="!props.modelValue.hidden" class="border-y-1 border-right-1 border-400 text-sm cursor-pointer"
                                             @click="fulfillGlobalDemand(p.class, slotProps.data)">
                                             <SupplyDisplay :supply="getGlobalProductDefecit(p.class, props.factories).value" />
                                         </div>
