@@ -343,10 +343,10 @@ const goToCompare = (product, targetPpm = 1) => {
             <Button label="Set!" :disabled="!Number(targetPpm.ppm)" @click="setPpm()" />
         </div>
     </Dialog>
-    <div class="w-full p-3 pb-0 surface-0 z-5 md:sticky border-bottom-1 border-100">
+    <div class="w-full p-3 pb-0 surface-0 z-5 border-bottom-1 border-100">
         <FactoryIOs :recipes="recipes" @check-add-recipe="checkAddRecipe" />
     </div>
-    <div class="p-2 w-full">
+    <div class="p-2 w-full md:overflow-y-scroll">
         <DataView class="border-x-1 border-1 border-100 surface-card" :value="Object.values(recipes).sort((a, b) => a?.index - b?.index)" :layout="layout">
             <template #header>
                 <div class="flex flex-column md:flex-row md:justify-content-between">

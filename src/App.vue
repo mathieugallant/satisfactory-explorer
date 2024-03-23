@@ -53,40 +53,33 @@ const checkResetFD = () => {
   <Dialog v-model:visible="showHelp" modal header="How to use" class="w-11 lg:w-9">
     <Help @checkResetFD="checkResetFD()" />
   </Dialog>
-  <div class="w-full">
-    <div class="z-5 w-full bg-primary flex align-items-center justify-content-between md:sticky top-0"
-      style="height: 32px;">
-      <div class="flex align-items-center">
-        <img src="./assets/satisfactory_logo.png" class="h-2rem mx-2" />
-        <div
-          :class="`cursor-pointer pt-1 flex-center border-bottom-3 w-4rem md:w-8rem h-2rem bg-yellow-300 border-${mode === 'explorer' ? 'red-400 font-bold' : 'yellow-300'}`"
-          @click="setMode('explorer')">
-          <span><i class="pi pi-search mr-2" /></span>
-          <span class="hidden md:block">explorer</span>
-        </div>
-        <div
-          :class="`cursor-pointer pt-1 flex-center border-bottom-3 w-4rem md:w-8rem h-2rem bg-green-300 border-${mode === 'planner' ? 'red-400 font-bold' : 'green-300'}`"
-          @click="setMode('planner')">
-          <span><i class="pi pi-sitemap mr-2" /></span>
-          <span class="hidden md:block">planner</span>
-        </div>
+  <div class="z-5 w-full bg-primary flex align-items-center justify-content-between h-2rem">
+    <div class="flex align-items-center">
+      <img src="./assets/satisfactory_logo.png" class="h-2rem mx-2" />
+      <div
+        :class="`cursor-pointer pt-1 flex-center border-bottom-3 w-4rem md:w-8rem h-2rem bg-yellow-300 border-${mode === 'explorer' ? 'red-400 font-bold' : 'yellow-300'}`"
+        @click="setMode('explorer')">
+        <span><i class="pi pi-search mr-2" /></span>
+        <span class="hidden md:block">explorer</span>
       </div>
-      <div class="flex justify-content-center align-items-center gap-3 pr-3">
-        <div
-          class="flex justify-content-center align-items-center border-circle cursor-pointer w-1rem h-1rem text-white border-2 border-white text-xs"
-          @click="() => showHelp = true">?</div>
-        <a href="https://github.com/mathieugallant/satisfactory-explorer" target="_blank">
-          <i class="pi pi-github text-white" />
-        </a>
+      <div
+        :class="`cursor-pointer pt-1 flex-center border-bottom-3 w-4rem md:w-8rem h-2rem bg-green-300 border-${mode === 'planner' ? 'red-400 font-bold' : 'green-300'}`"
+        @click="setMode('planner')">
+        <span><i class="pi pi-sitemap mr-2" /></span>
+        <span class="hidden md:block">planner</span>
       </div>
     </div>
-    <div v-if="mode === 'planner'" class="w-full">
-      <TabContainer v-if="initialized" :mainData="mainData" />
-    </div>
-    <div v-if="mode === 'explorer'" class="w-full">
-      <RecipeCompare v-if="initialized" :mainData="mainData" />
+    <div class="flex justify-content-center align-items-center gap-3 pr-3">
+      <div
+        class="flex justify-content-center align-items-center border-circle cursor-pointer w-1rem h-1rem text-white border-2 border-white text-xs"
+        @click="() => showHelp = true">?</div>
+      <a href="https://github.com/mathieugallant/satisfactory-explorer" target="_blank">
+        <i class="pi pi-github text-white" />
+      </a>
     </div>
   </div>
+  <TabContainer v-if="mode === 'planner' && initialized" :mainData="mainData" />
+  <RecipeCompare v-if="mode === 'explorer' && initialized" :mainData="mainData" />
   <ConfirmDialog />
   <Toast />
 </template>

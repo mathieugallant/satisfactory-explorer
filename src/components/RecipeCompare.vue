@@ -189,7 +189,7 @@ const addRecipeToFactory = (factoryId) => {
             </div>
         </div>
     </Dialog>
-    <div class="w-full z-4 flex justify-content-end bg-ficsit-secondary p-2" style="height: 60px;">
+    <div class="w-full z-4 flex justify-content-end bg-ficsit-secondary p-2 h-4rem">
         <div class="max-w-full p-inputgroup w-full md:w-8 lg:w-6 xl:w-4">
             <Dropdown v-model="selectedMat" :options="allProducts" optionLabel="name" filter
                 placeholder="Select a material" @change="setMaterialState">
@@ -202,7 +202,7 @@ const addRecipeToFactory = (factoryId) => {
             </Dropdown>
         </div>
     </div>
-    <div class="w-full md:overflow-y-scroll" style="height: calc(100vh - 92px);">
+    <div class="w-full md:overflow-y-scroll">
         <div v-if="selectedMat.id" class="w-full flex flex-column gap-3 p-2">
             <div class="w-full">
                 <h1 class="mb-0">{{ props.mainData.descs[selectedMat.id].name }}</h1>

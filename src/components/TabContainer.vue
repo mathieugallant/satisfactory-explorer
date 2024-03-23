@@ -309,15 +309,13 @@ onUnmounted(() => {
         </div>
     </Dialog>
 
-    <div class="w-full md:sticky z-4 top-0 toolbar">
+    <div class="w-full z-4 toolbar">
         <FactorySelector
             :callbacks="{ showOverview, factoryToClipboard, pasteFactory, confirmDelete, editFactoryName, createFactory, setShowFactoryOverview }"
             :factories="factories" v-model="factory" />
     </div>
-    <div v-if="factory" class="w-full z-3 md:overflow-y-scroll" style="height: calc(100vh - 92px);">
-        <TabContent :mainData="props.mainData" :modelValue="factory" :factories="factories"
+    <TabContent v-if="factory" :mainData="props.mainData" :modelValue="factory" :factories="factories"
             @update:modelValue="(data) => saveChanges(factory, data)" />
-    </div>
 </template>
 
 <style scoped>.text-xxs {
