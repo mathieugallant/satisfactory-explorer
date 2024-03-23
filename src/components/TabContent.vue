@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted, computed, nextTick } from 'vue';
-
+import ContextMenu from 'primevue/contextmenu';
 import Dropdown from 'primevue/dropdown';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
@@ -32,12 +32,22 @@ import ConsumptionTag from './ConsumptionTag.vue';
 import DataView from 'primevue/dataview';
 import { useRoute, useRouter } from 'vue-router';
 
-const confirm = useConfirm();
 const router = useRouter();
 const route = useRoute();
+const confirm = useConfirm();
 
 const props = defineProps(['mainData', 'modelValue', 'factories']);
 const emits = defineEmits(['update:modelValue']);
+
+const menu = ref();
+const items = ref([
+    { label: 'Select', icon: 'pi pi-plus', command: () => {
+        checkAddRecipe(menu.value.product) 
+    }},
+    { label: 'Explore', icon: 'pi pi-search', command: () => {
+        goToCompare(getData(menu.value.product), menu.value.ppm) 
+    }}
+]);
 
 const productForRecipe = ref({});
 const selectedRecipe = ref();
@@ -55,6 +65,12 @@ const holdAdjustMachines = {
     multiplier: 0
 };
 const graph = ref({ nodes: [], links: [] });
+
+const onProductRightClick = (event, pClass, ppm) => {
+    menu.value.product = pClass;
+    menu.value.ppm = ppm;
+    menu.value.show(event);
+};
 
 onMounted(() => {
     recipes.value = props.modelValue.factoryData || {};
@@ -324,6 +340,7 @@ const goToCompare = (product, targetPpm = 1) => {
 </script>
 
 <template>
+    <ContextMenu ref="menu" :model="items" />
     <Dialog v-model:visible="showSelectRecipe" modal header=" ">
         <div class="flex flex-column flex-center">
             <div class="mb-2 w-full">
@@ -394,7 +411,7 @@ const goToCompare = (product, targetPpm = 1) => {
                                     <div v-for="p of getData(slotProps.data.class).ingredients"
                                         class="flex flex-row align-items-center-center mt-1">
                                         <div class="px-1 bg-ficsit-secondary text-white border-1 border-400 text-sm cursor-pointer border-round-left"
-                                            @click="checkAddRecipe(p.class)">
+                                            @click="checkAddRecipe(p.class)" @contextmenu="onProductRightClick($event, p.class, roundNumber(computePpm(p.quantity, p.class, slotProps.data)))">
                                             {{ getName(p.class) }}
                                         </div>
                                         <div class="border-y-1 border-400 text-sm cursor-pointer"
@@ -418,8 +435,8 @@ const goToCompare = (product, targetPpm = 1) => {
                                     <div v-for="p of getData(slotProps.data.class).products"
                                         class="flex flex-row align-items-center-center mt-1">
                                         <div class="px-1 bg-ficsit-primary text-white border-1 border-400 text-sm  border-round-left"
-                                            @click="checkScrollToOutput(p.class, slotProps.data.class)">
-                                            {{ props.mainData.descs[p.class].name || getData(slotProps.data.class).name
+                                            @click="checkScrollToOutput(p.class, slotProps.data.class)" @contextmenu="onProductRightClick($event, p.class, roundNumber(computePpm(p.quantity, p.class, slotProps.data)))">
+                                            {{ getName(p.class) || getData(slotProps.data.class).name
                                             }}
                                         </div>
                                         <div v-if="!props.modelValue.hidden" class="border-y-1 border-right-1 border-400 text-sm cursor-pointer"

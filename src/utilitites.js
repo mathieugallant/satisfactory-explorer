@@ -30,7 +30,7 @@ export const getData = (tClass) => {
     if (tClass?.startsWith('Recipe')) {
         return recipes.find(r=>r.class === tClass);
     }
-    return descs.find?.(d=>d?.class === tClass);
+    return descs[tClass];
 };
 
 export const computeFactoryConsumption = (factoryConfig) => {

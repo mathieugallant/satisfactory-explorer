@@ -54,8 +54,8 @@ let helpOCValue = 0.675;
                 <div class="px-1 text-green-600">360</div>
             </div>
         </div>
-        <p>You can click on the material labels to scroll
-            down to the card which produces the related material. Repeat to go to the next factory producing the same material, if any. If no factory produce this material, it will promt you to add a suitable recipe.</p>
+        <p>Right-click a material label to see options. Click on the material labels to scroll
+            down to the card which produces the related material. Repeat to go to the next machine setup producing the same material, if any. If no factory produce this material, it will promt you to add a suitable recipe.</p>
 
         <p>You can add recipes to the production setup using the recipe selector. The total average consumption of the factory is displayed. Clicking "Production Setup" will sort cards alphabetically.</p>
         <div class="border-x-1 border-1 border-100 pb-4">
