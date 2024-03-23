@@ -96,11 +96,11 @@ export const sankeyfy = ({
         window.dispatchEvent(event);
       });
     
-    const xpos = (d) => { return d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6; };
+    const xpos = (d) => { return d.x1 + 6 };
   
     node.append("text")
       .attr("class", "sankey-label")
-      .attr("text-anchor", function (d) { return d.x0 < width / 2 ? "start" : "end"})
+      .attr("text-anchor", function (d) { return "start"})
       .attr("x", xpos)
       .attr("y", function (d) { return d.x0 < width / 2 ? d.y0 + ((d.y1 - d.y0) / 50) : d.y1 - ((d.y1 - d.y0) / 50); })
       .on("mouseover", function (e, detail) {
@@ -136,7 +136,7 @@ export const sankeyfy = ({
       .data(function (d) { 
         const x = xpos(d);
         if (!d?.labels?.length) return [{label: d.name, x, pos: "0em", data: d}];
-        const y = d.x0 < width / 2 ? 1: (-1 * (d.labels.length -1));
+        const y = (-1 * (d.labels.length / 2 -1));
         return d.labels.map((s, i) => {return {label: s, x, pos: (i?1.3:y)+"em", data: d}})
       })
       .enter()

@@ -163,9 +163,7 @@ export const Plot = function () {
             computeNodeBreadths(graph, iterations, id)
             computeLinkBreadths(graph)
     
-            //spreadNodes(graph, y0, py)
-            //expandNodesDown(graph, y0, py)
-            spreadNodes(graph, y0, py)
+            spreadNodes(graph, py)
             
             // 7.  Sort links per node, based on the links' source/target nodes' breadths
             // 8.  Adjust nodes that overlap links that span 2+ columns
@@ -173,16 +171,11 @@ export const Plot = function () {
             for (var iteration = 0; iteration < linkSortingIterations; iteration++) {
                 resolveNodeLinkOverlaps(graph, y0, y1, id);
                 deTangle(graph);   
-                spreadNodes(graph, y0, py)
+                spreadNodes(graph, py)
                 
                 await yieldControl();
-            } 
-            
-//            spreadNodes(graph, y0, py)
-//            resolveNodeLinkOverlaps(graph, y0, y1, id);
-            //deTangle(graph); 
-            //showNodeLinkOverlap(graph, y0, y1, id);
-            //selectCircularLinkTypes(graph, id)
+            }
+
             sortSourceLinks(graph, y1, id);
             sortTargetLinks(graph, y1, id);
     
@@ -884,6 +877,7 @@ function resolveNodeLinkOverlaps(graph, y0, y1, id) {
         }
     })
 }
+
 function showNodeLinkOverlap(graph, y0, y1, id) {
 
     graph.links.forEach(function (link) {
@@ -1252,58 +1246,12 @@ function selfLinking(link, id) {
     return getNodeID(link.source, id) == getNodeID(link.target, id)
 }
 
-function fillHeight(graph, y0, y1) {
-
-    var nodes = graph.nodes
-    var links = graph.links
-
-    var top = false
-    var bottom = false
-
-    links.forEach(function (link) {
-        if (link.circularLinkType == "top") {
-            top = true
-        } else if (link.circularLinkType == "bottom") {
-            bottom = true
-        }
-    })
-
-    if (top == false || bottom == false) {
-        var minY0 = min(nodes, function (node) { return node.y0 })
-        var maxY1 = max(nodes, function (node) { return node.y1 })
-        var currentHeight = maxY1 - minY0
-        var chartHeight = y1 - y0
-        var ratio = chartHeight / currentHeight
-
-        nodes.forEach(function (node) {
-            var nodeHeight = (node.y1 - node.y0) * ratio
-            node.y0 = (node.y0 - minY0) * ratio
-            node.y1 = node.y0 + nodeHeight
-        })
-
-        links.forEach(function (link) {
-            link.y0 = (link.y0 - minY0) * ratio
-            link.y1 = (link.y1 - minY0) * ratio
-            link.width = link.width * ratio
-        })
-    }
-
-}
-
-function spreadColumn(column, maxY1) {  
-    let totalLength = column.reduce((acc, obj) => acc + (obj.y1 - obj.y0), 0);  
-    for (let i = 1; i < column.length; i++) {
-      let previousObject = column[i - 1];
-      column[i].y0 = previousObject.y1 + spacing;
-      column[i].y1 = column[i].y0 + (column[i].y1 - column[i].y0);
-    }
-  }
 
 function byYLinks(a, b) {
     return getAverageY(a) - getAverageY(b)
 }
 
-function spreadNodes(graph, y0, py) {
+function spreadNodes(graph, py) {
     var columns = nest()
         .key(d => {
             return d.column
@@ -1317,65 +1265,36 @@ function spreadNodes(graph, y0, py) {
     columns.forEach((nodes) => {
         nodes.sort(ascendingBreadth);
         if (nodes.length > 1) {
-            for (let i = 1; i < nodes.length; i++) {
-                let node = nodes[i]
-                const overlap = nodes[i-1].y1 + py - node.y0;
-                if (overlap > 0) {
-                    nodes.forEach((n, ni) => {
-                        if (ni === i ) return;
-                        const factor = ni - i > 0 ? 1 : -1;
-                        n.y0 += overlap * factor
-                        n.y1 += overlap * factor
-                        n.targetLinks.forEach(l => {
-                            l.y1 += overlap * factor
-                        })
-                        n.sourceLinks.forEach(l => {
-                            l.y0 += overlap * factor
-                        })
+            // Spread nodes upwards from the center
+            for (let i = Math.floor(nodes.length / 2) - 1; i >= 0; i--) {
+                if (i < nodes.length - 1 && nodes[i].y1 + py > nodes[i + 1].y0) {
+                    const overlap = nodes[i].y1 + py - nodes[i + 1].y0;
+                    nodes[i].y0 -= overlap;
+                    nodes[i].y1 -= overlap;
+                    nodes[i].targetLinks.forEach(l => {
+                        l.y1 = nodes[i].y1
+                    })
+                    nodes[i].sourceLinks.forEach(l => {
+                        l.y0 = nodes[i].y0
                     })
                 }
             }
-        }
-    })
-}
 
-function expandNodesDown(graph, y0, py) {
-    var columns = nest()
-        .key(function (d) {
-            return d.column
-        })
-        .sortKeys(ascending)
-        .entries(graph.nodes)
-        .map(function (d) {
-            return d.values
-        })
-
-    // Spread nodes 
-    columns.forEach(function (nodes) {
-        var node, dy, y = y0, n = nodes.length, i
-        // Push any overlapping nodes down.
-        nodes.sort(ascendingBreadth)
-
-
-        for (i = 0; i < n; ++i) {
-            node = nodes[i]
-            dy = y - node.y0
-
-            if (dy > 0) {
-                // Move all previous node by the amount of overlap
-                for (let ii = 0; ii < i; ++ii) {
-                    const previousNode = nodes[ii]
-                    previousNode.y0 -= dy
-                    previousNode.y1 -= dy
-                    previousNode.targetLinks.forEach(function (l) {
-                        l.y1 = l.y1 - dy
+            // Spread nodes downwards from the center
+            for (let i = Math.floor(nodes.length / 2); i < nodes.length; i++) {
+                if (i > 0 && nodes[i - 1].y1 + py > nodes[i].y0) {
+                    const overlap = nodes[i - 1].y1 + py - nodes[i].y0;
+                    nodes[i].y0 += overlap;
+                    nodes[i].y1 += overlap;
+                    
+                    nodes[i].targetLinks.forEach(l => {
+                        l.y1 = nodes[i].y1
                     })
-                    previousNode.sourceLinks.forEach(function (l) {
-                        l.y0 = l.y0 - dy
+                    nodes[i].sourceLinks.forEach(l => {
+                        l.y0 = nodes[i].y0
                     })
                 }
             }
-            y = node.y1 + py
         }
     })
 }
