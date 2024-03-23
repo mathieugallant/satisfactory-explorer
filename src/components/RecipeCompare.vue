@@ -139,10 +139,10 @@ const usedInList = () => {
     }).sort((a,b) => a.name.localeCompare(b.name));
 };
 
-const selectMaterial = (dClass) => {
+const selectMaterial = (dClass, targetPpm = 1) => {
     const mat = allProducts.value.find(m => m.id === dClass);
     if (mat) {
-        selectedMat.value = mat;
+        selectedMat.value = {...mat, targetPpm};
         setMaterialState();
     }
 };
@@ -258,7 +258,7 @@ const addRecipeToFactory = (factoryId) => {
                                         </div>
                                         <div v-for="p of getData(recipe.class).ingredients"
                                             class="flex flex-row align-items-center-center mt-1">
-                                            <div class="px-1 bg-ficsit-secondary text-white border-1 border-400 text-sm border-round-left cursor-pointer" @click="selectMaterial(p.class)">
+                                            <div class="px-1 bg-ficsit-secondary text-white border-1 border-400 text-sm border-round-left cursor-pointer" @click="selectMaterial(p.class, roundNumber(computePpm(p.quantity, p.class, recipe)))">
                                                 {{ getName(p.class) }}
                                             </div>
                                             <div class="px-1 border-1 border-400 text-sm border-round-right">
@@ -277,7 +277,7 @@ const addRecipeToFactory = (factoryId) => {
                                         </div>
                                         <div v-for="p of getData(recipe.class).products"
                                             class="flex flex-row align-items-center-center mt-1">
-                                            <div class="px-1 bg-ficsit-primary text-white border-1 border-400 text-sm border-round-left cursor-pointer" @click="selectMaterial(p.class)">
+                                            <div class="px-1 bg-ficsit-primary text-white border-1 border-400 text-sm border-round-left cursor-pointer" @click="selectMaterial(p.class, roundNumber(computePpm(p.quantity, p.class, recipe)))">
                                                 {{ props.mainData.descs[p.class].name || getData(recipe.class).name
                                                 }}
                                             </div>
