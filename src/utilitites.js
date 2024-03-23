@@ -5,7 +5,8 @@ export const manualBuildClasses = [
     "BP_BuildGun_C",
     "BP_WorkshopComponent_C",
     "BP_WorkBenchComponent_C",
-    "FGBuildableAutomatedWorkBench"
+    "FGBuildGun",
+    "FGBuildableAutomatedWorkBench",
 ];
 
 export const extractorFactors = {
