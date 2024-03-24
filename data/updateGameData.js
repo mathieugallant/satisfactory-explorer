@@ -174,7 +174,7 @@ const getDescriptions = (rawData) => {
         const i = recipes.findIndex(r => r.class == p);
         if (i<0) console.error("Can't find ", p)
         for ({mk, mkf} of  [{mk: '1', mkf: 1}, {mk: '2', mkf: 2}, {mk: '3', mkf: 4}]) {
-          for (purity of [{l: 'Impure', f: 2}, {l: 'Normal', f: 2}, {l: 'Pure', f: 4}]) {
+          for (purity of [{l: 'Impure', f: 1}, {l: 'Normal', f: 2}, {l: 'Pure', f: 4}]) {
             if (mk === '1' && purity.l === 'Impure') continue;
             recipes.push({
               ...recipes[i],
