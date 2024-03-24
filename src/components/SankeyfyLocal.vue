@@ -66,7 +66,7 @@ const convertFactoryToGraph = () => {
                 `>] ${roundNumber(x.production)} /min`,
                 `${roundNumber(x.consumption)} /min [>`, 
             ].filter(x=>x),
-            highlight: x.consumption > x.production,
+            highlight: roundNumber(x.consumption) > roundNumber(x.production),
             data: {
                 material_class: x.desc,
                 material_id: x.name,
