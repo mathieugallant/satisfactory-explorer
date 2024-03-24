@@ -62,9 +62,9 @@ const convertFactoryToGraph = () => {
             id: x.name,
             name: x.name,
             labels: [
-                `${x.labels}${x.consumption > x.production ? ' 🚨' : ''}`,
-                `>] ${x.production} /min`,
-                `${x.consumption} /min [>`, 
+                `${x.labels}${roundNumber(x.consumption) > roundNumber(x.production) ? ' 🚨' : ''}`,
+                `>] ${roundNumber(x.production)} /min`,
+                `${roundNumber(x.consumption)} /min [>`, 
             ].filter(x=>x),
             highlight: x.consumption > x.production,
             data: {
