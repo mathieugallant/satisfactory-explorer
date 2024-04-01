@@ -73,7 +73,10 @@ export const conputeGlobalConsumption = (factories) => {
 
 export const computeConsumption = (data) => {
     const prodData = getData(data.class);
-    const defaultProducer = descs[prodData.produced.filter(x => !manualBuildClasses.includes(x))?.[0]];
+    const defaultProducer = {
+        ...descs[prodData.produced.filter(x => !manualBuildClasses.includes(x))?.[0]],
+        powerExponent: 1.4, // Power exponent is now 1.4?
+    };
 
     
     let consumption = Number(defaultProducer?.powerConsumption) || (Number(prodData?.consumptionFactor) + Number(prodData?.consumptionConstant));
