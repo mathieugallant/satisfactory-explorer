@@ -93,7 +93,7 @@ const getRecipes = (rawData) => {
         "OreCopper": "Copper Ore",
         "OreIron": "Iron Ore",
         "OreBauxite": "Bauxite",
-        "Limestone": "Limestone",
+        "Stone": "Limestone",
         "Sulfur": "Sulfur",
       };
 

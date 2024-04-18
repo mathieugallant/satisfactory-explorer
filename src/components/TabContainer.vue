@@ -290,7 +290,7 @@ onUnmounted(() => {
             </div>
         </div>
     </Dialog>
-    <Dialog v-model:visible="showPasteFactory.visible" modal header="Import Factory" class="w-11 md:w-8 lg:w-6">
+    <Dialog v-model:visible="showPasteFactory.visible" modal header="Import Factory" class="w-11">
         <div class="flex flex-column w-full">
             <label>Import Factory As :</label>
             <div class="p-inputgroup flex-1 mb-2">
