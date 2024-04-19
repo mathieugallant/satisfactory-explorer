@@ -426,11 +426,13 @@ const goToCompare = (product, targetPpm = 1) => {
                                             {{ getName(p.class) }}
                                         </div>
                                         <div v-if="!props.modelValue.hidden" class="border-y-1 border-right-1 border-400 text-sm cursor-pointer"
-                                            @click="balanceToGlobalProduction(p.class, slotProps.data)">
+                                            @click="balanceToGlobalProduction(p.class, slotProps.data)"
+                                            title="Global Supply or Deficit">
                                             <SupplyDisplay :supply="getGlobalProductDefecit(p.class, props.factories).value" />
                                         </div>
                                         <div class="border-y-1 border-400 text-sm cursor-pointer"
-                                            @click="matchInput(p.class, slotProps.data)">
+                                            @click="matchInput(p.class, slotProps.data)"
+                                            title="Local Supply or Deficit">
                                             <SupplyDisplay :supply="roundNumber(computeSupply(p.class, recipes))" />
                                         </div>
                                         <div class="px-1 border-1 border-400 text-sm cursor-pointer  border-round-right"
@@ -455,11 +457,13 @@ const goToCompare = (product, targetPpm = 1) => {
                                             }}
                                         </div>
                                         <div v-if="!props.modelValue.hidden" class="border-y-1 border-right-1 border-400 text-sm cursor-pointer"
-                                            @click="fulfillGlobalDemand(p.class, slotProps.data)">
+                                            @click="fulfillGlobalDemand(p.class, slotProps.data)"
+                                            title="Global Supply or Deficit">
                                             <SupplyDisplay :supply="getGlobalProductDefecit(p.class, props.factories).value" />
                                         </div>
                                         <div class="border-y-1 border-400 text-sm cursor-pointer"
-                                            @click="matchOutput(p.class, slotProps.data)">
+                                            @click="matchOutput(p.class, slotProps.data)"
+                                            title="Local Supply or Deficit">
                                             <SupplyDisplay :supply="roundNumber(computeSupply(p.class, recipes))" />
                                         </div>
                                         <div class="px-1 border-1 border-400 text-sm cursor-pointer border-round-right"
