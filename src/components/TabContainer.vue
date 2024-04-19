@@ -167,6 +167,7 @@ const pasteFactory = () => {
                 showPasteFactory.value.content = clip;
                 showPasteFactory.value.object = tFactoryData;
                 showPasteFactory.value.importName = tFactoryData.id;
+                console.log(showPasteFactory.value)
             }
             else {
                 console.warn("Clipboard doesn't contain factory data", clip);
@@ -182,13 +183,19 @@ const pasteFactory = () => {
 };
 
 const importFactory = () => {
-    if (factories.value.find(f => f.id === showPasteFactory.value.importName)) {
-        confirmOverwrite();
+    try {
+        JSON.parse(showPasteFactory.value.content)
+        if (factories.value.find(f => f.id === showPasteFactory.value.importName)) {
+            confirmOverwrite();
+        }
+        else {
+            doFactoryImport();
+        }
+        showPasteFactory.value.visible = false;
     }
-    else {
-        doFactoryImport();
+    catch{
+        toast.add({ severity: 'error', summary: "Cannot parse factory data. It must be valid JSON", life: 8000 });
     }
-    showPasteFactory.value.visible = false;
 };
 
 const confirmOverwrite = () => {
@@ -202,12 +209,13 @@ const confirmOverwrite = () => {
 
 const doFactoryImport = () => {
     showPasteFactory.value.object.id = showPasteFactory.value.importName.trim();
-    const tFactory = factories.value.findIndex(f => f.id === showPasteFactory.value.object.id);
-    if (tFactory >= 0) {
-        factories.value[tFactory] = showPasteFactory.value.object;
+    const tFactoryIndex = factories.value.findIndex(f => f.id === showPasteFactory.value.object.id);
+    const tFactoryData = JSON.parse(showPasteFactory.value.content)
+    if (tFactoryIndex >= 0) {
+        factories.value[tFactoryIndex] = tFactoryData;
     }
     else {
-        factories.value.push(showPasteFactory.value.object);
+        factories.value.push(tFactoryData);
     }
     factory.value = factories.value.find(f => f.id === showPasteFactory.value.object.id);
     saveChanges();
