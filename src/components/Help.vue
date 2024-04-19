@@ -127,7 +127,7 @@ let helpOCValue = 0.675;
         </div>
         <p>
             If a deficit or surplus is present in the setup, it will be displayed in red or green.
-            Clicking on this number will balance the number of machines and overclock setting to eliminate this surplus or defitit.
+            Clicking on this number will balance the number of machines and overclock setting to consume this surplus or eliminate the defitit.
         </p>
         <div class="flex">
             <div class="px-1 bg-ficsit-secondary text-white border-1 border-400 text-sm cursor-pointer border-round-left"
@@ -147,9 +147,9 @@ let helpOCValue = 0.675;
             </div>
         </div>
         <p>
-            Two balance numbers are shown for outputs. The left number highlighted in blue represents the global deficit or surplus for that material.
-            The right number highlighted in green represents the deficit or surplus local to this factory. 
-            Clicking on this number will balance the number of machines and overclock setting to eliminate the surplus or deficit at the global or local level according to your selection.
+            By default, a factory is part of the global production setup <i class="pi pi-globe" />. When this is the case, two balance numbers are shown instead of one. The left number highlighted in blue represents the global deficit or surplus for that material.
+            The right number highlighted in green represents the deficit or surplus local to this factory. If the factory is hidden <i class="pi pi-eye-slash" /> from the global production setup, only the local number highlighted in green will be available.
+            Clicking on those numbers will balance the number of machines and overclock setting to eliminate the surplus or deficit at the global or local level according to your selection.
         </p>
         <div class="flex">
             <div class="px-1 bg-ficsit-primary text-white border-1 border-400 text-sm cursor-pointer border-round-left"

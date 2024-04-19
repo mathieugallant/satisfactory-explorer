@@ -160,6 +160,17 @@ const fulfillGlobalDemand = (dClass, rData) => {
     }
 };
 
+const balanceToGlobalProduction = (dClass, rData) => {
+    const prodData = getData(rData.class);
+    targetPpm.value.rClass = rData.class;
+    targetPpm.value.dClass = prodData.products[0].class;
+    const currentIngredientPpm = computePpm(prodData.ingredients.find(x => x.class === dClass).quantity, dClass, rData);
+    const currentIngredientSupply = getGlobalProductDefecit(dClass, props.factories).value;
+    const targetRatio = (currentIngredientPpm + currentIngredientSupply) / currentIngredientPpm;
+    targetPpm.value.ppm = computePpm(prodData.products[0]?.quantity, prodData.products[0].class, recipes.value[rData.class]) * targetRatio;
+    setPpm();
+};
+
 const matchInput = (dClass, rData) => {
     const prodData = getData(rData.class);
     targetPpm.value.rClass = rData.class;
@@ -414,8 +425,12 @@ const goToCompare = (product, targetPpm = 1) => {
                                             @click="checkAddRecipe(p.class)" @contextmenu="onProductRightClick($event, p.class, roundNumber(computePpm(p.quantity, p.class, slotProps.data)))">
                                             {{ getName(p.class) }}
                                         </div>
+                                        <div v-if="!props.modelValue.hidden" class="border-y-1 border-right-1 border-400 text-sm cursor-pointer"
+                                            @click="balanceToGlobalProduction(p.class, slotProps.data)">
+                                            <SupplyDisplay :supply="getGlobalProductDefecit(p.class, props.factories).value" />
+                                        </div>
                                         <div class="border-y-1 border-400 text-sm cursor-pointer"
-                                            @click="matchInput(p.class, slotProps.data, )">
+                                            @click="matchInput(p.class, slotProps.data)">
                                             <SupplyDisplay :supply="roundNumber(computeSupply(p.class, recipes))" />
                                         </div>
                                         <div class="px-1 border-1 border-400 text-sm cursor-pointer  border-round-right"
