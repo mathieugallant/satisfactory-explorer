@@ -247,7 +247,7 @@ onUnmounted(() => {
         </div>
     </div>
     <div v-if="!loading">
-        <ConsumptionTag :consumption="computeFactoryConsumption(factory.factoryData)"  prefix="Total "/>
+        <ConsumptionTag :consumption="computeFactoryConsumption(factory.factoryData)"  prefix="Factory Total "/>
         <ProgressBar v-if="loading" class="mt-2" mode="indeterminate" style="height: 6px"></ProgressBar>
     </div>
     <div :id="snkid"  @mousemove="updateToolTipPosition" class="sankey-container" style="max-height: 60vw;"></div>

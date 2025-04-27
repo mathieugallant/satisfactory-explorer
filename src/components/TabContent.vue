@@ -72,6 +72,10 @@ const onProductRightClick = (event, pClass, ppm) => {
     menu.value.show(event);
 };
 
+const copyTextToClipboard = (text) => {
+    navigator.clipboard.writeText(text)
+}
+
 onMounted(() => {
     recipes.value = props.modelValue.factoryData || {};
     window.addEventListener('mouseup', () => {
@@ -97,7 +101,7 @@ onMounted(() => {
     if (route.query.recipe) {
         router.push({ query: { ...route.query, recipe: null } });
         nextTick(() => {
-            scrollToOutput([route.query.recipe]);
+            scrollTo([route.query.recipe]);
         })
     }
 });
@@ -280,20 +284,24 @@ const setPpm = (targetOverclock = 1) => {
     recipes.value[targetPpm.value.rClass].overclock = targetPpm.value.ppm / (baseRate * targetNumMachines) || 0;
 };
 
+const getCandidates = (productClass) => {
+    return Object.keys(recipes.value).filter(r => getData(r)?.products?.find(x => x.class === productClass)?.quantity || getData(r)?.ingredients?.find(x => x.class === productClass)?.quantity);
+};
+
 const getProducingCandidates = (productClass) => {
-    return Object.keys(recipes.value).filter(r => getData(r)?.products?.find(x => x.class === productClass)?.quantity);
+    return Object.keys(recipes.value).filter(r => getData(r)?.products?.find(x => x.class === productClass)?.quantity).length;
 };
 
-const checkScrollToOutput = (productClass, startingCandidate = null) => {
-    const candidates = getProducingCandidates(productClass);
-    scrollToOutput(candidates, startingCandidate);
+const checkScrollTo = (productClass, startingCandidate = null) => {
+    const candidates = getCandidates(productClass);
+    scrollTo(candidates, startingCandidate);
 };
 
-const checkAddRecipe = (pClass) => {
+const checkAddRecipe = (pClass, startingCandidate = null) => {
     productForRecipe.value = {name: getName(pClass) || pClass, class: pClass};
-    const candidates = getProducingCandidates(pClass);
-    if (candidates.length) {
-        scrollToOutput(candidates);
+    const candidates = getCandidates(pClass);
+    if (getProducingCandidates(pClass) && candidates.length) {
+        scrollTo(candidates, startingCandidate);
     }
     else {
         possibleRecipes.value = props.mainData.recipes.filter(r => r.products.find(p => p.class === pClass));
@@ -303,7 +311,7 @@ const checkAddRecipe = (pClass) => {
     }
 };
 
-const scrollToOutput = (candidates, startingCandidate = null) => {
+const scrollTo = (candidates, startingCandidate = null) => {
     if (candidates.length) {
         let index = candidates.indexOf(startingCandidate);
 
@@ -333,7 +341,7 @@ const selectableRecipies = computed(() => {
 watch(() => route.query, () => {
     if (route.query.recipe){
         router.push({ query: { ...route.query, recipe: null} });
-        scrollToOutput([route.query.recipe]);
+        scrollTo([route.query.recipe]);
     }
 });
 
@@ -386,7 +394,7 @@ const goToCompare = (product, targetPpm = 1) => {
                     <div class="flex flex-row align-items-center gap-2">
                         <h3 class="m-1 cursor-pointer" @click="sortListAlpha()" title="Click to sort">Production Setup
                             <i class="pi pi-sort-alpha-down" /></h3>
-                        <ConsumptionTag :consumption="getFactoryConsumption()" prefix="Factory"/>
+                        <ConsumptionTag :consumption="getFactoryConsumption()" />
                     </div>
                     <div class="p-inputgroup w-20rem">
                         <Dropdown v-model="selectedRecipe" :options="selectableRecipies" filter optionLabel="name"
@@ -427,7 +435,7 @@ const goToCompare = (product, targetPpm = 1) => {
                                     <div v-for="p of getData(slotProps.data.class).ingredients"
                                         class="flex flex-row align-items-center-center mt-1">
                                         <div class="px-1 bg-ficsit-secondary text-white border-1 border-400 text-sm cursor-pointer border-round-left"
-                                            @click="checkAddRecipe(p.class)" @contextmenu="onProductRightClick($event, p.class, roundNumber(computePpm(p.quantity, p.class, slotProps.data, true)))">
+                                            @click="checkAddRecipe(p.class, slotProps.data.class)" @contextmenu="onProductRightClick($event, p.class, roundNumber(computePpm(p.quantity, p.class, slotProps.data, true)))">
                                             {{ getName(p.class) }}
                                         </div>
                                         <div v-if="!props.modelValue.hidden" class="border-y-1 border-right-1 border-400 text-sm cursor-pointer"
@@ -457,7 +465,7 @@ const goToCompare = (product, targetPpm = 1) => {
                                     <div v-for="p of getData(slotProps.data.class).products"
                                         class="flex flex-row align-items-center-center mt-1">
                                         <div class="px-1 bg-ficsit-primary text-white border-1 border-400 text-sm  border-round-left"
-                                            @click="checkScrollToOutput(p.class, slotProps.data.class)" @contextmenu="onProductRightClick($event, p.class, roundNumber(computePpm(p.quantity, p.class, slotProps.data)))">
+                                            @click="checkScrollTo(p.class, slotProps.data.class)" @contextmenu="onProductRightClick($event, p.class, roundNumber(computePpm(p.quantity, p.class, slotProps.data)))">
                                             {{ getName(p.class) || getData(slotProps.data.class).name
                                             }}
                                         </div>
@@ -498,6 +506,11 @@ const goToCompare = (product, targetPpm = 1) => {
                                             <img src="../assets/Clock_speed.png" class="h-1_5rem" />
                                         </span>
                                         <InputText v-model.number="slotProps.data.overclock" class="w-full" />
+                                        
+                                        <span title="Copy overclock percentage to clipboard" class="p-inputgroup-addon cursor-pointer"
+                                            @click="copyTextToClipboard(slotProps.data.overclock * 100)">
+                                            <i class="pi pi-copy" />
+                                        </span>
                                         <span title="Balance without overclock" class="p-inputgroup-addon cursor-pointer"
                                             @click="startSetPpm(slotProps.data.class, getData(slotProps.data.class).products[0].class, false)">
                                             ⚖️
