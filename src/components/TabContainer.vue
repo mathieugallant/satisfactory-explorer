@@ -167,7 +167,6 @@ const pasteFactory = () => {
                 showPasteFactory.value.content = clip;
                 showPasteFactory.value.object = tFactoryData;
                 showPasteFactory.value.importName = tFactoryData.id;
-                console.log(showPasteFactory.value)
             }
             else {
                 console.warn("Clipboard doesn't contain factory data", clip);

@@ -6,7 +6,6 @@ import InputNumber from 'primevue/inputnumber';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
 import {
-    extractorFactors,
     getData,
     computePpm,
     isExtractor,
@@ -17,6 +16,7 @@ import {
     getUom,
     getAutobuildNames,
     computeConsumption,
+    getSloopMulti,
 } from "../utilitites";
 import ConsumptionTag from './ConsumptionTag.vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -51,25 +51,26 @@ const setPpm = (rClass) => {
     const prodData = getData(rClass);
     const dClass = selectedMat.value.id;
     const quantity = prodData.products.find(x => x.class === dClass)?.quantity || prodData.ingredients.find(x => x.class === dClass).quantity;
-    const factor = extractorFactors[dClass] || 1;
 
     let correction = 1;
     if (isExtractor(prodData) && ['Desc_LiquidOil_C'].includes(dClass)) {
         correction = 2;
     }
 
-    const baseRate = (quantity /
-        (props.mainData.descs[dClass].form === "RF_LIQUID" && !isExtractor(prodData) ? 1000 : 1) * correction
-    ) * (60 / prodData.duration);
+    const sloopMulti = getSloopMulti(selectedMat.value.sloopNumber, rClass);
 
-    let targetNumMachines = selectedMat.value.targetPpm / factor * correction / baseRate / targetOverclock;
+    const baseRate = (quantity /
+        (["RF_LIQUID", "RF_GAS"].includes(props.mainData.descs[dClass].form) ? 1000 : 1) * correction
+    ) * (60 / prodData.duration) * sloopMulti;
+
+    let targetNumMachines = selectedMat.value.targetPpm / correction / baseRate / targetOverclock;
 
     if (targetNumMachines > Math.round(targetNumMachines)) {
         targetNumMachines++;
     }
     targetNumMachines = Math.round(targetNumMachines);
     recipes.value[rClass].numMachines = targetNumMachines || 1;
-    recipes.value[rClass].overclock = selectedMat.value.targetPpm / (baseRate * targetNumMachines * factor) || 0;
+    recipes.value[rClass].overclock = selectedMat.value.targetPpm / (baseRate * targetNumMachines) || 0;
 };
 
 watch(() => route.query, () => {
@@ -118,7 +119,8 @@ const updateRecipes = () => {
         recipes.value[r.class] = {
             class: r.class,
             overclock: 1,
-            numMachines: 1
+            numMachines: 1,
+            sloopNumber: selectedMat.value.sloopNumber
         }
     })
     Object.keys(recipes.value).forEach(r => setPpm(r));
@@ -139,10 +141,10 @@ const usedInList = () => {
     }).sort((a,b) => a.name.localeCompare(b.name));
 };
 
-const selectMaterial = (dClass, targetPpm = 1) => {
+const selectMaterial = (dClass, targetPpm = 1, sloopNumber = 0) => {
     const mat = allProducts.value.find(m => m.id === dClass);
     if (mat) {
-        selectedMat.value = {...mat, targetPpm};
+        selectedMat.value = {...mat, targetPpm, sloopNumber};
         setMaterialState();
     }
 };
@@ -213,18 +215,28 @@ const addRecipeToFactory = (factoryId) => {
             </div>
             <div v-if="Object.values(recipes).length" class="surface-card surface-border border-1 border-round-md p-3">
                 <h3 class="mt-2">Recipes</h3>
-                <div v-if="hasAutobuild()" class="p-inputgroup w-20rem">
-                    <InputNumber v-model="selectedMat.targetPpm" mode="decimal" :min="0" :minFractionDigits="0" :maxFractionDigits="5" :step="0.1" suffix=" / minute" placeholder="Target Rate" @update:modelValue="setMaterialState" />
-                    <span title="Balance for maximum overclock"
-                        class="p-inputgroup-addon cursor-pointer"
-                        @click="setTargetOverclock(true)">
-                        🚀
-                    </span>
-                    <span title="Balance without overclock"
-                        class="p-inputgroup-addon cursor-pointer"
-                        @click="setTargetOverclock(false)">
-                        ⚖️
-                    </span>
+                <div v-if="hasAutobuild()" class="flex flex-row gap-4">
+                    <div class="p-inputgroup w-20rem">
+                        <InputNumber v-model="selectedMat.targetPpm" mode="decimal" :min="0" :minFractionDigits="0" :maxFractionDigits="5" :step="0.1" suffix=" / minute" placeholder="Target Rate" @update:modelValue="setMaterialState" />
+                        <span title="Balance for maximum overclock"
+                            class="p-inputgroup-addon cursor-pointer"
+                            @click="setTargetOverclock(true)">
+                            <img src="../assets/Clock_speed.png" class="h-1_5rem" />
+                        </span>
+                        <span title="Balance without overclock"
+                            class="p-inputgroup-addon cursor-pointer"
+                            @click="setTargetOverclock(false)">
+                            ⚖️
+                        </span>
+                    </div>
+                    <div class="p-inputgroup w-7rem">
+                        <InputNumber v-model="selectedMat.sloopNumber" mode="decimal" :min="0" :max="4" :minFractionDigits="0" :maxFractionDigits="0" :step="1" placeholder="0" @update:modelValue="setMaterialState" />
+                        <span title="Number of Somersloop"
+                            class="p-inputgroup-addon cursor-pointer"
+                            @click="setTargetOverclock(false)">
+                            <img src="../assets/Somersloop.png" class="h-1_5rem" />
+                        </span>
+                    </div>
                 </div>
                 <div v-else>Manual build only material</div>
                 <div class="w-full flex flex-row flex-wrap">
@@ -258,12 +270,12 @@ const addRecipeToFactory = (factoryId) => {
                                         </div>
                                         <div v-for="p of getData(recipe.class).ingredients"
                                             class="flex flex-row align-items-center-center mt-1">
-                                            <div class="px-1 bg-ficsit-secondary text-white border-1 border-400 text-sm border-round-left cursor-pointer" @click="selectMaterial(p.class, roundNumber(computePpm(p.quantity, p.class, recipe)))">
+                                            <div class="px-1 bg-ficsit-secondary text-white border-1 border-400 text-sm border-round-left cursor-pointer" @click="selectMaterial(p.class, roundNumber(computePpm(p.quantity, p.class, recipe, true)))">
                                                 {{ getName(p.class) }}
                                             </div>
                                             <div class="px-1 border-1 border-400 text-sm border-round-right">
                                                 <span>
-                                                    {{ roundNumber(computePpm(p.quantity, p.class, recipe)) }}
+                                                    {{ roundNumber(computePpm(p.quantity, p.class, recipe, true)) }}
                                                 </span>
                                                 <span class="text-xxs">
                                                     {{ getUom(p.class, recipe) }}
@@ -326,6 +338,10 @@ const addRecipeToFactory = (factoryId) => {
 
 .mats-in {
     margin-bottom: 1rem;
+}
+
+.h-1_5rem {
+    height: 1.5rem;
 }
 
 @container (min-width: 500px) {

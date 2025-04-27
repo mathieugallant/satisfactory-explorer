@@ -53,7 +53,7 @@ const convertFactoryToGraph = () => {
         });
         recipeData.ingredients.forEach(d => {
             tNodes[d.class] ??= { id: d.class, name: d.class, labels: [getName(d.class)], desc: d.class, production: 0, consumption: 0 };
-            tNodes[d.class].consumption += computePpm(d.quantity, d.class, r);
+            tNodes[d.class].consumption += computePpm(d.quantity, d.class, r, true);
             graph.value.links.push({ target: r.class, source: d.class, value: computePpm(d.quantity, d.class, r) });
         });
     });

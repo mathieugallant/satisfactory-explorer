@@ -9,23 +9,6 @@ export const manualBuildClasses = [
     "FGBuildableAutomatedWorkBench",
 ];
 
-export const extractorFactors = {
-    Desc_Coal_C: 1,
-    Desc_RawQuartz_C: 1,
-    Desc_OreUranium_C: 1, 
-    Desc_OreGold_C: 1,
-    Desc_OreCopper_C: 1,
-    Desc_OreIron_C: 1,
-    Desc_OreBauxite_C: 1,
-    Desc_Stone_C: 1,
-    Desc_Sulfur_C: 1,
-
-    Desc_NitrogenGas_C: 0.001,
-
-    Desc_Water_C: 1,
-    Desc_LiquidOil_C: 1,
-};
-
 export const getData = (tClass) => {
     if (tClass?.startsWith('Recipe')) {
         return recipes.find(r=>r.class === tClass);
@@ -34,68 +17,73 @@ export const getData = (tClass) => {
 };
 
 export const computeFactoryConsumption = (factoryConfig) => {
-    return Math.round(Object.values(factoryConfig).reduce((p, data) => {
-        const prodData = getData(data.class);
-        const defaultProducer = descs[prodData.produced.filter(x => !manualBuildClasses.includes(x))?.[0]];
+    const consumption = Object.values(factoryConfig).reduce((p, data) => {
+        const {maxConsumption, minConsumption} = getConsumption(data)
     
-        
-        let consumption = Number(defaultProducer?.powerConsumption) || Number(prodData?.consumptionFactor);
-        
-        if(!consumption || !defaultProducer ) {
-            return p;
+        return {
+            maxConsumption: p.maxConsumption + maxConsumption || 0,
+            minConsumption: p.minConsumption + minConsumption || 0
         }
-        
-        const maxConsumption =  consumption * Math.pow(data.overclock,defaultProducer.powerExponent) * data.numMachines;
-    
-        return p + maxConsumption;
-    }, 0)*100)/100;
+    }, {
+        maxConsumption: 0,
+        minConsumption: 0
+    });
+    return formatConsumptionString(consumption);
 };
 
 export const conputeGlobalConsumption = (factories) => {
-    let globalPower = 0;
-    factories.filter(f => !f.hidden).forEach((factory) => globalPower += Object.values(factory.factoryData).reduce((p, data) => {
-        const prodData = getData(data.class);
-        const defaultProducer = descs[prodData.produced.filter(x => !manualBuildClasses.includes(x))?.[0]];
+    const consumption = factories.filter(f => !f.hidden).flatMap((factory) => Object.values(factory.factoryData)).reduce((p, data) => {
+        const {maxConsumption, minConsumption} = getConsumption(data)
     
-        
-        let consumption = Number(defaultProducer?.powerConsumption) || Number(prodData?.consumptionFactor);
-        
-        if(!consumption || !defaultProducer ) {
-            return p;
+        return {
+            maxConsumption: p.maxConsumption + maxConsumption || 0,
+            minConsumption: p.minConsumption + minConsumption || 0
         }
-        
-        const maxConsumption =  consumption * Math.pow(data.overclock,defaultProducer.powerExponent) * data.numMachines;
-    
-        return p + maxConsumption;
-    }, 0))
-    return Math.round(globalPower * 100) / 100
+    }, {
+        maxConsumption: 0,
+        minConsumption: 0
+    })
+    return formatConsumptionString(consumption);
 }
 
 export const computeConsumption = (data) => {
-    const prodData = getData(data.class);
-    const defaultProducer = {
-        ...descs[prodData.produced.filter(x => !manualBuildClasses.includes(x))?.[0]],
-        powerExponent: 1.4, // Power exponent is now 1.4?
-    };
-
-    
-    let consumption = Number(defaultProducer?.powerConsumption) || (Number(prodData?.consumptionFactor) + Number(prodData?.consumptionConstant));
-    
-    if(!consumption || !defaultProducer ) {
-        return '';
-    }
-    
-    const maxConsumption =  Math.round(consumption * Math.pow(data.overclock,defaultProducer.powerExponent) * data.numMachines *100)/100;
-    const minConsumption = Math.round(prodData?.consumptionConstant * Math.pow(data.overclock,defaultProducer.powerExponent) * data.numMachines*100)/100;
-    const avgConsumption = Math.round(prodData?.consumptionFactor * Math.pow(data.overclock,defaultProducer.powerExponent) * data.numMachines*100)/100;
-
-    return (minConsumption ? minConsumption + '-': '') + maxConsumption + (minConsumption ? ' (avg. ' + avgConsumption + ')': '');
+    return formatConsumptionString(getConsumption(data))
 };
 
-export const maxEffectiveOc = (rClass) => {
-    if (rClass.endsWith('PureMk3')) {
-        return 1.625;
+const formatConsumptionString = (consumption) => {
+    if (!consumption.maxConsumption) return "";
+    let avgConsumption = 0;
+    if (consumption.minConsumption < consumption.maxConsumption) {
+        avgConsumption = (consumption.maxConsumption - consumption.minConsumption) / 2 + consumption.minConsumption;
     }
+    return (avgConsumption ? roundNumber(consumption.minConsumption) + '-': '') + roundNumber(consumption.maxConsumption) + (avgConsumption ? ' (avg. ' + roundNumber(avgConsumption, 10) + ')': '');
+}
+
+const getConsumption = (data) => {
+    const prodData = getData(data.class);
+    const defaultProducer = {
+        ...descs[prodData.produced.filter(x => !manualBuildClasses.includes(x))?.[0]]
+    };
+    
+    let consumption = Number(defaultProducer?.maximumPowerConsumption) || Number(defaultProducer?.powerConsumption);
+    
+    if(!consumption || !defaultProducer ) {
+        return {
+            maxConsumption: 0,
+            minConsumption: 0
+        };
+    }
+    const sloopMulti = data.sloopNumber && defaultProducer?.productionShardSlots ? Math.pow(1 + (Math.min(data.sloopNumber, defaultProducer.productionShardSlots) / defaultProducer.productionShardSlots), 2) : 1;
+    
+    const maxConsumption =  Math.round(sloopMulti * consumption * Math.pow(data.overclock,defaultProducer.powerExponent) * data.numMachines *100)/100;
+    const minConsumption = Math.round(sloopMulti * prodData?.consumptionConstant * Math.pow(data.overclock,defaultProducer.powerExponent) * data.numMachines*100)/100;
+    return {
+        maxConsumption,
+        minConsumption: defaultProducer?.maximumPowerConsumption ? minConsumption : minConsumption || maxConsumption,
+    }
+}
+
+export const maxEffectiveOc = (rClass) => {
     return 2.5
 }
 
@@ -115,7 +103,7 @@ export const getAllNetDefecits = (factoryConfig) => {
     });
 };
 
-export const getGlobalProductDefecit = (pClass, factories) => {
+export const getGlobalProductDeficit = (pClass, factories) => {
     const res = {desc: pClass, name: getName(pClass), value: 0};
     factories.filter(f => !f.hidden).forEach(f => {
         if (f.factoryData){
@@ -143,7 +131,7 @@ export const computeSupply = (dClass, factoryConfig) => {
         const r = {...t,...getData(t.class)};
         r.ingredients.forEach(i => {
             if(i.class === dClass) {
-                supply -= computePpm(i.quantity, i.class, r);
+                supply -= computePpm(i.quantity, i.class, r, true);
             }
         });
         r.products.forEach(i => {
@@ -171,17 +159,18 @@ export const getAllNetProduction = (factoryConfig) => {
     });
 };
 
-export const roundNumber = (num) => {
-    return Math.round(num * 1000) / 1000;
+export const roundNumber = (num, precision = 1000) => {
+    return Math.round(num * precision) / precision;
 };
 
-export const computePpm = (quantity, dClass, data) => {
+export const computePpm = (quantity, dClass, data, input = false) => {
     const prodData = getData(data.class);
     if(isManual(prodData)) {
         return quantity / prodData?.products?.[0]?.quantity;
     }
 
-    const factor = extractorFactors[dClass] || 1;
+    const sloopMulti = getSloopMulti(data.sloopNumber, data.class, input) 
+
     let correction = 1;
     if (isExtractor(prodData) && ['Desc_LiquidOil_C'].includes(dClass)) {
         correction = 2;
@@ -189,20 +178,33 @@ export const computePpm = (quantity, dClass, data) => {
     return Math.round(
         ( 
             quantity / 
-            (descs[dClass].form === "RF_LIQUID" && !isExtractor(data)  ? 1000 : 1)
+            (["RF_LIQUID", "RF_GAS"].includes(descs[dClass]?.form) ? 1000 : 1)
         ) * 
         (60 / prodData.duration) * 
         data.overclock * 
         data.numMachines * 
-        factor * correction *
-        100
+        correction *
+        (input ? 1 : sloopMulti) *
+        100 
+
     ) / 100;
 };
 
+export const getSloopMulti = (numSloops, dClass) => {
+    const maxSloops = getMaxSloops(dClass);
+    if (!numSloops || !maxSloops) return 1;
+    return 1 + Math.min(numSloops, maxSloops) / maxSloops;
+
+}
+
+export const getMaxSloops = (rClass) => {
+    const prodData = getData(rClass);
+    
+    const defaultProducer = descs[prodData.produced.filter(x => !manualBuildClasses.includes(x))?.[0]];
+    return Number(defaultProducer?.productionShardSlots || 0);
+}
+
 export const getName = (dClass) => {
-    if (dClass === 'Build_Converter_C') {
-        return 'Extrator';
-    }
     return descs?.[dClass]?.name || dClass;
 };
 
@@ -223,11 +225,11 @@ export const getUom = (dClass, data) => {
     if (isManual(getData(data?.class))) {
         return '';
     }
-    return descs[dClass].form === "RF_LIQUID" ? 'm³/min' : '/min'
+    return ["RF_LIQUID", "RF_GAS"].includes(descs[dClass]?.form) ? 'm³/min' : '/min'
 };
 
 export const isExtractor = (data) => {
-    return getData(data.class).produced.includes('Build_Converter_C')
+    return getData(data.class).produced.includes('Build_FrackingExtractor')
 };
 
 export const isManual = (data) => {

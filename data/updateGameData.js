@@ -9,7 +9,11 @@ const getDescriptions = (rawData) => {
         "abbreviated": mAbbreviatedDisplayName,
         "discardable": mCanBeDiscarded,
         "powerConsumption": mPowerConsumption,
+        "maximumPowerConsumption": mEstimatedMaximumPowerConsumption,
         "powerExponent": mPowerConsumptionExponent,
+        "productionBoostPowerExponent": mProductionBoostPowerConsumptionExponent,
+        "productionShardSlots": mProductionShardSlotSize,
+        "productionShardBoostMultiplier": mProductionShardBoostMultiplier,
         "energy": mEnergyValue,
         "decay": mRadioactiveDecay,
         "form": mForm,
@@ -37,12 +41,12 @@ const makeRBasicecipe = (rClass, name, product_class, product_quantity, produced
     "class": rClass,
     name,
     "ingredients": [],
-    "products": [
+    "products": product_class ? [
       {
         "class": product_class,
         "quantity": product_quantity
       }
-    ],
+    ] : [],
     "produced": [produced],
     "duration": "1.000000",
     "consumptionConstant": "0.000000",
@@ -56,16 +60,16 @@ const getRecipes = (rawData) => {
     {
         "class": ClassName,
         "name": mDisplayName,
-        "ingredients": [$split($replace($replace($replace(mIngredients, /^\\((.*)\\)$/, '$1'), '(', ''), /\\)$/, ''), '),').{"class": $replace(/.*\\.([A-Za-z0-9_]*)"',.*/, '$1'), "quantity": $replace(/.*=([0-9]*)/, "$1")}],
-        "products": [$split($replace($replace($replace(mProduct, /^\\((.*)\\)$/, '$1'), '(', ''), /\\)$/, ''), '),').{"class": $replace(/.*\\.([A-Za-z0-9_]*)"',.*/, '$1'), "quantity": $replace(/.*=([0-9]*)/, "$1")}],
+        "ingredients": [$filter([$split($replace($replace($replace(mIngredients, /^\\((.*)\\)$/, '$1'), '(', ''), /\\)$/, ''), '),').{"class": $replace(/.*'.*\\.(.*)'.*/, '$1'), "quantity": $replace(/.*=([0-9]*)/, "$1")}], function($v) {$v.class != ""})],
+        "products": [$filter([$split($replace($replace($replace(mProduct, /^\\((.*)\\)$/, '$1'), '(', ''), /\\)$/, ''), '),').{"class": $replace(/.*'.*\\.(.*)'.*/, '$1'), "quantity": $replace(/.*=([0-9]*)/, "$1")}], function($v) {$v.class != ""})],
         "produced": [$split($replace(mProducedIn, /\\((.*)\\)/, '$1'), ',').$replace($string(), /.*\\.([A-Za-z0-9_]+)\\"/, '$1')],
         "duration": mManufactoringDuration,
         "consumptionConstant": mVariablePowerConsumptionConstant,
         "consumptionFactor": mVariablePowerConsumptionFactor
     }`;
 
-  return jsonata(jsonexp).evaluate(rawData).then(pDesc => {
-    return [...pDesc];
+  return jsonata(jsonexp).evaluate(rawData).then(pRecip => {
+    return [...pRecip];
   })
     .then((recipes) => {
       // Patch in mising recipes.
@@ -131,7 +135,7 @@ const getRecipes = (rawData) => {
                 `Desc_${p}_C`,
                 0.5 * purity.f * mkf,
                 `Build_MinerMk${mk}_C`,
-                mk === '3' && purity.f === 4 ? "Maximum output is 780 due to belt speed limitations." : null
+                null
               ),
             })
           }

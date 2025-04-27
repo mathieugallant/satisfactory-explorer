@@ -9,19 +9,19 @@ import Slider from 'primevue/slider';
 import Dialog from 'primevue/dialog';
 import { useConfirm } from "primevue/useconfirm";
 import {
-    extractorFactors,
     computeFactoryConsumption,
     getData,
     computePpm,
     getName,
     computeSupply,
-    getGlobalProductDefecit,
+    getGlobalProductDeficit,
     roundNumber,
     isExtractor,
     isManual,
     getUom,
     getAutobuildNames,
     computeConsumption,
+    getMaxSloops,
     maxEffectiveOc,
 } from "../utilitites";
 
@@ -136,7 +136,20 @@ const removeRecipe = (dClass) => {
     adjustIndexes();
 };
 
-const matchOutput = (dClass, rData) => {
+const balanceInput = (dClass, rData) => {
+    const prodData = getData(rData.class);
+    targetPpm.value.rClass = rData.class;
+    targetPpm.value.dClass = prodData.products[0].class;
+    const currentIngredientPpm = computePpm(prodData.ingredients.find(x => x.class === dClass).quantity, dClass, rData, true);
+    const currentIngredientSupply = computeSupply(dClass, recipes.value);
+    const maxSloops = getMaxSloops(rData.class);
+    const sloopFactor = maxSloops ? 1 + (recipes.value[targetPpm.value.rClass].sloopNumber || 0) / maxSloops : 1
+    const targetRatio = (currentIngredientPpm + currentIngredientSupply) / currentIngredientPpm;
+    targetPpm.value.ppm = computePpm(prodData.products[0]?.quantity, prodData.products[0].class, recipes.value[rData.class], true) * targetRatio * sloopFactor;
+    setPpm();
+};
+
+const balanceOutput = (dClass, rData) => {
     const data = getData(rData.class);
     if (getAutobuildNames(data?.produced)) {
         targetPpm.value.rClass = rData.class;
@@ -147,38 +160,28 @@ const matchOutput = (dClass, rData) => {
     }
 };
 
-
-const fulfillGlobalDemand = (dClass, rData) => {
+const balanceOutputGlobal = (dClass, rData) => {
     const data = getData(rData.class);
     if (getAutobuildNames(data?.produced)) {
         targetPpm.value.rClass = rData.class;
         targetPpm.value.dClass = dClass;
         const quantity = data.products.find(x => x.class === dClass)?.quantity;
         targetPpm.value.ppm = computePpm(quantity, dClass, recipes.value[rData.class]);
-        targetPpm.value.ppm += getGlobalProductDefecit(dClass, props.factories).value * -1;
+        targetPpm.value.ppm += getGlobalProductDeficit(dClass, props.factories).value * -1;
         setPpm();
     }
 };
 
-const balanceToGlobalProduction = (dClass, rData) => {
+const balanceInputGlobal = (dClass, rData) => {
     const prodData = getData(rData.class);
     targetPpm.value.rClass = rData.class;
     targetPpm.value.dClass = prodData.products[0].class;
-    const currentIngredientPpm = computePpm(prodData.ingredients.find(x => x.class === dClass).quantity, dClass, rData);
-    const currentIngredientSupply = getGlobalProductDefecit(dClass, props.factories).value;
+    const currentIngredientPpm = computePpm(prodData.ingredients.find(x => x.class === dClass).quantity, dClass, rData, true);
+    const currentIngredientSupply = getGlobalProductDeficit(dClass, props.factories).value;
+    const maxSloops = getMaxSloops(rData.class);
+    const sloopFactor = maxSloops ? 1 + (recipes.value[targetPpm.value.rClass].sloopNumber || 0) / maxSloops : 1
     const targetRatio = (currentIngredientPpm + currentIngredientSupply) / currentIngredientPpm;
-    targetPpm.value.ppm = computePpm(prodData.products[0]?.quantity, prodData.products[0].class, recipes.value[rData.class]) * targetRatio;
-    setPpm();
-};
-
-const matchInput = (dClass, rData) => {
-    const prodData = getData(rData.class);
-    targetPpm.value.rClass = rData.class;
-    targetPpm.value.dClass = prodData.products[0].class;
-    const currentIngredientPpm = computePpm(prodData.ingredients.find(x => x.class === dClass).quantity, dClass, rData);
-    const currentIngredientSupply = computeSupply(dClass, recipes.value);
-    const targetRatio = (currentIngredientPpm + currentIngredientSupply) / currentIngredientPpm;
-    targetPpm.value.ppm = computePpm(prodData.products[0]?.quantity, prodData.products[0].class, recipes.value[rData.class]) * targetRatio;
+    targetPpm.value.ppm = computePpm(prodData.products[0]?.quantity, prodData.products[0].class, recipes.value[rData.class], true) * targetRatio * sloopFactor;
     setPpm();
 };
 
@@ -252,7 +255,6 @@ const setPpm = (targetOverclock = 1) => {
     const prodData = getData(targetPpm.value.rClass);
     const dClass = targetPpm.value.dClass;
     const quantity = prodData.products.find(x => x.class === dClass)?.quantity || prodData.ingredients.find(x => x.class === dClass).quantity;
-    const factor = extractorFactors[dClass] || 1;
 
     targetPpm.value.visible = false;
 
@@ -261,18 +263,21 @@ const setPpm = (targetOverclock = 1) => {
         correction = 2;
     }
 
-    const baseRate = (quantity /
-        (props.mainData.descs[dClass].form === "RF_LIQUID" && !isExtractor(prodData) ? 1000 : 1) * correction
-    ) * (60 / prodData.duration);
+    const maxSloops = getMaxSloops(targetPpm.value.rClass);
+    const sloopFactor = maxSloops ? 1 + (recipes.value[targetPpm.value.rClass].sloopNumber || 0) / maxSloops : 1
 
-    let targetNumMachines = targetPpm.value.ppm / factor * correction / baseRate / targetOverclock;
+    const baseRate = (quantity /
+        (["RF_LIQUID", "RF_GAS"].includes(props.mainData.descs[dClass].form) ? 1000 : 1) * correction
+    ) * (60 / prodData.duration) * sloopFactor;
+
+    let targetNumMachines = targetPpm.value.ppm / correction / baseRate / targetOverclock;
 
     if (targetNumMachines > Math.round(targetNumMachines)) {
         targetNumMachines++;
     }
     targetNumMachines = Math.round(targetNumMachines);
     recipes.value[targetPpm.value.rClass].numMachines = targetNumMachines || 1;
-    recipes.value[targetPpm.value.rClass].overclock = targetPpm.value.ppm / (baseRate * targetNumMachines * factor) || 0;
+    recipes.value[targetPpm.value.rClass].overclock = targetPpm.value.ppm / (baseRate * targetNumMachines) || 0;
 };
 
 const getProducingCandidates = (productClass) => {
@@ -422,23 +427,23 @@ const goToCompare = (product, targetPpm = 1) => {
                                     <div v-for="p of getData(slotProps.data.class).ingredients"
                                         class="flex flex-row align-items-center-center mt-1">
                                         <div class="px-1 bg-ficsit-secondary text-white border-1 border-400 text-sm cursor-pointer border-round-left"
-                                            @click="checkAddRecipe(p.class)" @contextmenu="onProductRightClick($event, p.class, roundNumber(computePpm(p.quantity, p.class, slotProps.data)))">
+                                            @click="checkAddRecipe(p.class)" @contextmenu="onProductRightClick($event, p.class, roundNumber(computePpm(p.quantity, p.class, slotProps.data, true)))">
                                             {{ getName(p.class) }}
                                         </div>
                                         <div v-if="!props.modelValue.hidden" class="border-y-1 border-right-1 border-400 text-sm cursor-pointer"
-                                            @click="balanceToGlobalProduction(p.class, slotProps.data)"
-                                            title="Global Supply or Deficit">
-                                            <SupplyDisplay :supply="getGlobalProductDefecit(p.class, props.factories).value" />
+                                            @click="balanceInputGlobal(p.class, slotProps.data)"
+                                            title="Global Surplus or Deficit. Click to balance.">
+                                            <SupplyDisplay :supply="getGlobalProductDeficit(p.class, props.factories, true).value" />
                                         </div>
                                         <div class="border-y-1 border-400 text-sm cursor-pointer"
-                                            @click="matchInput(p.class, slotProps.data)"
-                                            title="Local Supply or Deficit">
+                                            @click="balanceInput(p.class, slotProps.data)"
+                                            title="Local Surplus or Deficit. Click to balance.">
                                             <SupplyDisplay :supply="roundNumber(computeSupply(p.class, recipes))" />
                                         </div>
                                         <div class="px-1 border-1 border-400 text-sm cursor-pointer  border-round-right"
                                             @click="startSetPpm(slotProps.data.class, p.class)">
                                             <span>
-                                                {{ roundNumber(computePpm(p.quantity, p.class, slotProps.data)) }}
+                                                {{ roundNumber(computePpm(p.quantity, p.class, slotProps.data, true)) }}
                                             </span>
                                             <span class="text-xxs">
                                                 {{ getUom(p.class, slotProps.data) }}
@@ -457,13 +462,13 @@ const goToCompare = (product, targetPpm = 1) => {
                                             }}
                                         </div>
                                         <div v-if="!props.modelValue.hidden" class="border-y-1 border-right-1 border-400 text-sm cursor-pointer"
-                                            @click="fulfillGlobalDemand(p.class, slotProps.data)"
-                                            title="Global Supply or Deficit">
-                                            <SupplyDisplay :supply="getGlobalProductDefecit(p.class, props.factories).value" />
+                                            @click="balanceOutputGlobal(p.class, slotProps.data)"
+                                            title="Global Surplus or Deficit. Click to balance.">
+                                            <SupplyDisplay :supply="getGlobalProductDeficit(p.class, props.factories).value" />
                                         </div>
                                         <div class="border-y-1 border-400 text-sm cursor-pointer"
-                                            @click="matchOutput(p.class, slotProps.data)"
-                                            title="Local Supply or Deficit">
+                                            @click="balanceOutput(p.class, slotProps.data)"
+                                            title="Local Surplus or Deficit. Click to balance.">
                                             <SupplyDisplay :supply="roundNumber(computeSupply(p.class, recipes))" />
                                         </div>
                                         <div class="px-1 border-1 border-400 text-sm cursor-pointer border-round-right"
@@ -485,25 +490,39 @@ const goToCompare = (product, targetPpm = 1) => {
                             </div>
                         </div>
                         <div v-if="getAutobuildNames(getData(slotProps.data.class)?.produced)" class="col-12">
-                            <div class="w-full">
-                                <div class="p-inputgroup flex-1">
-                                    <span title="Balance for maximum overclock" class="p-inputgroup-addon cursor-pointer"
-                                        @click="startSetPpm(slotProps.data.class, getData(slotProps.data.class).products[0].class, false, maxEffectiveOc(slotProps.data.class))">
-                                        🚀
-                                    </span>
-                                    <InputText v-model.number="slotProps.data.overclock" class="w-full" />
-                                    <span title="Balance without overclock" class="p-inputgroup-addon cursor-pointer"
-                                        @click="startSetPpm(slotProps.data.class, getData(slotProps.data.class).products[0].class, false)">
-                                        ⚖️
-                                    </span>
-                                    <span title="Reset to 100% without balancing"
-                                        class="p-inputgroup-addon cursor-pointer"
-                                        @click="() => slotProps.data.overclock = 1">
-                                        <i class="pi pi-refresh" />
-                                    </span>
+                            <div class="flex flex-row gap-4">
+                                <div class="w-full">
+                                    <div class="p-inputgroup flex-1">
+                                        <span title="Balance for maximum overclock" class="p-inputgroup-addon cursor-pointer"
+                                            @click="startSetPpm(slotProps.data.class, getData(slotProps.data.class).products[0].class, false, maxEffectiveOc(slotProps.data.class))">
+                                            <img src="../assets/Clock_speed.png" class="h-1_5rem" />
+                                        </span>
+                                        <InputText v-model.number="slotProps.data.overclock" class="w-full" />
+                                        <span title="Balance without overclock" class="p-inputgroup-addon cursor-pointer"
+                                            @click="startSetPpm(slotProps.data.class, getData(slotProps.data.class).products[0].class, false)">
+                                            ⚖️
+                                        </span>
+                                        <span title="Reset to 100% without balancing"
+                                            class="p-inputgroup-addon cursor-pointer"
+                                            @click="() => slotProps.data.overclock = 1">
+                                            <i class="pi pi-refresh" />
+                                        </span>
+                                    </div>
+                                    <Slider v-model="slotProps.data.overclock" class="w-full" :max="maxEffectiveOc(slotProps.data.class)" :step="0.05"
+                                        style="margin-top: -1px;" />
                                 </div>
-                                <Slider v-model="slotProps.data.overclock" class="w-full" :max="maxEffectiveOc(slotProps.data.class)" :step="0.05"
-                                    style="margin-top: -1px;" />
+                                <div class=" w-7rem" :title="getMaxSloops(slotProps.data.class) ? 'Number of Somersloop' : 'No Somersloop slots available'">
+                                    <div class="p-inputgroup">
+                                        <InputNumber v-model="slotProps.data.sloopNumber" mode="decimal" :min="0" :max="getMaxSloops(slotProps.data.class)" :minFractionDigits="0" :maxFractionDigits="0" :step="1" placeholder="0" :disabled="!getMaxSloops(slotProps.data.class)"/>
+                                        <span 
+                                            class="p-inputgroup-addon"
+                                            @click="setTargetOverclock(false)">
+                                            <img src="../assets/Somersloop.png" :class="'h-1_5rem' + (getMaxSloops(slotProps.data.class) ? '' : ' opacity-50')" />
+                                        </span>
+                                    </div>
+                                    <Slider v-model="slotProps.data.sloopNumber" class="w-full" :max="getMaxSloops(slotProps.data.class)" :step="1" :disabled="!getMaxSloops(slotProps.data.class)"
+                                            style="margin-top: -1px;" />
+                                </div>
                             </div>
                             <div class="w-full mt-3">
                                 <div class="p-inputgroup flex-1">
@@ -559,6 +578,10 @@ const goToCompare = (product, targetPpm = 1) => {
 
 .mats-in {
     margin-bottom: 1rem;
+}
+
+.h-1_5rem {
+    height: 1.5rem;
 }
 
 @container (min-width: 500px) {
