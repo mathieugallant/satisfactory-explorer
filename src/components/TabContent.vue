@@ -506,14 +506,13 @@ const goToCompare = (product, targetPpm = 1) => {
                                             <img src="../assets/Clock_speed.png" class="h-1_5rem" />
                                         </span>
                                         <InputText v-model.number="slotProps.data.overclock" class="w-full" />
-                                        
-                                        <span title="Copy overclock percentage to clipboard" class="p-inputgroup-addon cursor-pointer"
-                                            @click="copyTextToClipboard(slotProps.data.overclock * 100)">
-                                            <i class="pi pi-copy" />
-                                        </span>
                                         <span title="Balance without overclock" class="p-inputgroup-addon cursor-pointer"
                                             @click="startSetPpm(slotProps.data.class, getData(slotProps.data.class).products[0].class, false)">
                                             ⚖️
+                                        </span>
+                                        <span title="Copy overclock percentage to clipboard" class="p-inputgroup-addon cursor-pointer"
+                                            @click="copyTextToClipboard(slotProps.data.overclock * 100)">
+                                            <i class="pi pi-copy" />
                                         </span>
                                         <span title="Reset to 100% without balancing"
                                             class="p-inputgroup-addon cursor-pointer"

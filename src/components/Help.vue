@@ -16,8 +16,9 @@ let helpOCValue = 0.675;
     <div>
         <h2>Explorer Mode</h2>
         <p>Select a material from the drop-down list. The adjustable parts-per-minute setting is set to 1 by default.</p>
-        <p>Clicking the 🚀 button will show the required settings for each recipe to match the set parts-per-minute with maximum overclock.</p> 
+        <p>Clicking the <img src="../assets/Clock_speed.png" class="h-1_5rem" /> button will show the required settings for each recipe to match the set parts-per-minute with maximum overclock.</p> 
         <p>Clicking the ⚖️ button will show the required settings for each recipe to match the set parts-per-minute with no overclock.</p>
+        <p>The number of Somersloop <img src="../assets/Somersloop.png" class="h-1_5rem" /> installed in machines corresponding to a specific recipe. More than one type of machine can produce a given material, and they may not have the same number of Somersloop slots. Somersloops in excess of the maximum a machine type supports are ignored.</p>
         <hr>
         <h2>Planner Mode</h2>
         <h3>Need to start over?</h3>
@@ -55,9 +56,11 @@ let helpOCValue = 0.675;
             </div>
         </div>
         <p>Right-click a material label to see options. Click on the material labels to scroll
-            down to the card which produces the related material. Repeat to go to the next machine setup producing the same material, if any. If no factory produce this material, it will promt you to add a suitable recipe.</p>
+            down to the next card which produces or consumes the related material. The window will scroll in view of the next card and highlight it, if any. If no machine group produce this material, it will promt you to add a suitable recipe, or view them in the explorer mode.</p>
 
-        <p>You can add recipes to the production setup using the recipe selector. The total average consumption of the factory is displayed. Clicking "Production Setup" will sort cards alphabetically.</p>
+        <p>You can add recipes to the production setup using the recipe selector. Each recipe is represented by a card, which also represent a machine group which together produce and consume the materials listed in the card and all have the same settings.</p>
+            
+        <p>Power consumption statistics are shown at the factory and card level. Clicking "Production Setup" will sort cards alphabetically.</p>
         <div class="border-x-1 border-1 border-100 pb-4">
             <DataView layout="grid">
                 <template #header>
@@ -85,8 +88,8 @@ let helpOCValue = 0.675;
             </DataView>
         </div>
         <p>
-            The total number consumed or produced per minute is displayed. You can click this number to set it to the
-            desired value. The number of machine will automatically be adjusted to meet the target without overclock.
+            Each machine group shows the total number of materials consumed or produced per minute. You can click the consumed or produced numbers to set them to the
+            desired value. The number of machine will automatically be adjusted to meet the target without overclocking by default. 
         </p>
         <div class="flex">
             <div class="px-1 bg-ficsit-secondary text-white border-1 border-400 text-sm cursor-pointer border-round-left"
@@ -106,8 +109,7 @@ let helpOCValue = 0.675;
             </div>
         </div>
         <p>
-            If a checkmark is displayed next to a material, it means the factory produces an equal amount than what it
-            consumes.</p>
+            If a checkmark is displayed next to a material, it means the factory produces the exact required amount.</p>
             <div class="flex">
             <div class="px-1 bg-ficsit-secondary text-white border-1 border-400 text-sm cursor-pointer border-round-left"
                 @click="checkAddRecipe(p.class)">
@@ -126,8 +128,8 @@ let helpOCValue = 0.675;
             </div>
         </div>
         <p>
-            If a deficit or surplus is present in the setup, it will be displayed in red or green.
-            Clicking on this number will balance the number of machines and overclock setting to consume this surplus or eliminate the defitit.
+            If a deficit or surplus is present in the setup, it will be displayed in red or green respectively.
+            Clicking on this number will balance the number of machines and overclock setting to to match, reducing or increasing the production as needed.
         </p>
         <div class="flex">
             <div class="px-1 bg-ficsit-secondary text-white border-1 border-400 text-sm cursor-pointer border-round-left"
@@ -229,9 +231,6 @@ let helpOCValue = 0.675;
                                 <div class="border-1 border-400 text-sm cursor-pointer">
                                     <div class="px-1 text-green-600">✓</div>
                                 </div>
-                                <div class="border-y-1 border-400 text-sm cursor-pointer">
-                                    <div class="px-1 text-green-600">27</div>
-                                </div>
                                 <div class="px-1 border-1 border-400 text-sm cursor-pointer border-round-right">
                                     <span>
                                         27
@@ -248,7 +247,7 @@ let helpOCValue = 0.675;
                     <div class="w-full">
                         <div class="p-inputgroup flex-1 border-3 border-red-400">
                             <span class="p-inputgroup-addon">
-                                🚀
+                                <img src="../assets/Clock_speed.png" class="h-1_5rem" />
                             </span>
                             <InputText v-model="helpOCValue" class="w-full" />
                             <span title="Balance without overclock" class="p-inputgroup-addon cursor-pointer">
@@ -275,8 +274,16 @@ let helpOCValue = 0.675;
             The overclock value is set as a multiplier. For example, a value of 1 is equal to
             100%, 0.5 equals 50% and 2.5 equals 250%.
         </p>
-        <p>Clicking the 🚀 button will attempt to match the set output rate with as few machines as possible.</p> 
-        <p>Clicking the ⚖️ button will attempt to match the set output rate by adding as many machines as needed to stay at or bellow 100% clock speed.
-        </p>
+        <p>Clicking the <img src="../assets/Clock_speed.png" class="h-1_5rem" /> button will attempt to match the set output rate with as few machines as possible (maximum required overclock).</p> 
+        <p>Clicking the ⚖️ button will attempt to match the set output rate by adding as many machines as needed to stay at or bellow 100% clock speed.</p>
+        <p>The number of Somersloop <img src="../assets/Somersloop.png" class="h-1_5rem" /> installed in machines can be set for each machine group. The setting is disabled if the machines have no available Somersloop slots, such as miners.</p>
     </div>
 </template>
+
+<style scoped>
+
+.h-1_5rem {
+    height: 1.5rem;
+}
+
+</style>
