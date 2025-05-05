@@ -41,7 +41,7 @@ watch(() => props.modelValue, () => factory.value = props.modelValue?.id);
                     <Button v-if="factory" icon="pi pi-trash" severity="danger"  @click="props.callbacks.confirmDelete" title="Delete factory"/>
                     <Button v-if="factory" icon="pi pi-pencil" severity="success" @click="props.callbacks.editFactoryName" title="Edit factory" />
                     <Button v-if="factory" icon="pi pi-sitemap" severity="secondary" @click="props.callbacks.setShowFactoryOverview" title="Factory Overview" />
-                    <Dropdown v-model="factory" :options="props.factories.map(x=>x.id)" filter placeholder="Select a factory" />
+                    <Dropdown v-model="factory" :options="props.factories.map(x=>x.id).sort()" filter placeholder="Select a factory" />
                     <Button icon="pi pi-plus" @click="props.callbacks.createFactory" title="Create new factory"/>
                 </div>
             </div>
@@ -59,7 +59,7 @@ watch(() => props.modelValue, () => factory.value = props.modelValue?.id);
                 </div>
             </div>
             <div class="p-inputgroup w-full">
-                <Dropdown v-model="factory" :options="props.factories.map(x=>x.id).sort((a,b)=>a.id.localeCompare(b.id))" filter placeholder="Select a factory" />        
+                <Dropdown v-model="factory" :options="props.factories.map(x=>x.id).sort()" filter placeholder="Select a factory" />        
                 <Button icon="pi pi-plus" @click="props.callbacks.createFactory" title="Create new factory"/>
             </div>
         </div>
